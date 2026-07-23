@@ -4,44 +4,154 @@ HTML
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>校内ナビゲーション</title>
-  <!-- LeafletのCSS/JS読み込み -->
+  <title>名城大学附属高等学校 校内ナビ</title>
+  <!-- Leaflet CDN -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    body { margin: 0; padding: 0; }
-    #map { height: 100vh; width: 100vw; }
-    .nav-bar {
-      position: absolute; top: 10px; left: 10px; z-index: 1000;
-      background: white; padding: 10px; border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-family: sans-serif;
+    body { margin: 0; padding: 0; font-family: sans-serif; background: #f0f2f5; }
+    #map { height: 82vh; width: 100vw; background: #e2e8f0; }
+    
+    /* 操作パネルのスタイル */
+    .control-panel {
+      height: 18vh;
+      padding: 12px;
+      background: #ffffff;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-sizing: border-box;
     }
+    .select-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+    label { font-size: 13px; font-weight: bold; color: #2d3748; }
+    select {
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e0;
+      background-color: #fff;
+    }
+    .btn-nav {
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: bold;
+      color: white;
+      background-color: #1a365d;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-nav:hover { background-color: #2b4c7e; }
   </style>
 </head>
 <body>
 
-<div class="nav-bar">
-  <h3>校内マップ（テスト）</h3>
-  <p>ピンをタップすると場所名が表示されます</p>
-</div>
-
 <div id="map"></div>
 
+<div class="control-panel">
+  <div class="select-group">
+    <label>出発:
+      <select id="startSelect">
+        <option value="office">1号館 1F 事務室</option>
+        <option value="library">1号館 1F 図書館</option>
+        <option value="staff7f">1号館 7F 職員室</option>
+        <option value="cad1">4号館 3F CAD室1</option>
+        <option value="pc3">4号館 4F パソコン教室3</option>
+      </select>
+    </label>
+    <label>目的:
+      <select id="endSelect">
+        <option value="cad1">4号館 3F CAD室1</option>
+        <option value="office">1号館 1F 事務室</option>
+        <option value="library">1号館 1F 図書館</option>
+        <option value="staff7f">1号館 7F 職員室</option>
+        <option value="pc3">4号館 4F パソコン教室3</option>
+      </select>
+    </label>
+  </div>
+  <button class="btn-nav" onclick="showRoute()">ルート案内を表示</button>
+</div>
+
 <script>
-  // 地図の初期化（緯度・経度とズームレベル）
-  const map = L.map('map').setView([35.6812, 139.7671], 18);
+  // 1. 画像用の平面座標系（L.CRS.Simple）を設定
+  const map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -1.5,
+    maxZoom: 2
+  });
 
-  // 無料の背景地図タイル（OpenStreetMap）
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
+  // 2. 配置図画像の縦横解像度（ピクセル単位）
+  const imgWidth = 1400;
+  const imgHeight = 1000;
+  const bounds = [[0, 0], [imgHeight, imgWidth]];
 
-  // テスト用スポット（ピン）の配置
-  L.marker([35.6812, 139.7671]).addTo(map)
-    .bindPopup('<b>本部棟 / 総合受付</b>').openPopup();
+  // 3. アップロードした配置図画像（R8教室配置図.png）を読み込み
+  const image = L.imageOverlay('R8教室配置図.png', bounds).addTo(map);
+  map.fitBounds(bounds);
 
-  L.marker([35.6818, 139.7675]).addTo(map)
-    .bindPopup('<b>学食 / カフェテリア</b>');
+  // 4. 主要な教室・目的地の座標定義 [y, x]
+  const spots = {
+    office:   { name: "1号館 1F 事務室",       pos: [115, 305] },
+    library:  { name: "1号館 1F 図書館",       pos: [70, 485] },
+    staff7f:  { name: "1号館 7F 職員室",       pos: [625, 60] },
+    cad1:     { name: "4号館 3F CAD室1",       pos: [355, 850] },
+    pc3:      { name: "4号館 4F パソコン教室3", pos: [450, 955] }
+  };
+
+  // マーカー（ピン）を設置
+  Object.keys(spots).forEach(key => {
+    const spot = spots[key];
+    L.marker(spot.pos).addTo(map).bindPopup(`<b>${spot.name}</b>`);
+  });
+
+  let activeLine = null;
+
+  // 5. 簡易案内ルート（直線描画）処理
+  function showRoute() {
+    const startKey = document.getElementById('startSelect').value;
+    const endKey = document.getElementById('endSelect').value;
+
+    if (startKey === endKey) {
+      alert("出発地と目的地が同じです");
+      return;
+    }
+
+    if (activeLine) map.removeLayer(activeLine);
+
+    const startPos = spots[startKey].pos;
+    const endPos = spots[endKey].pos;
+
+    // 赤い太破線でルートを強調表示
+    activeLine = L.polyline([startPos, endPos], {
+      color: '#e53e3e',
+      weight: 6,
+      dashArray: '8, 8',
+      opacity: 0.9
+    }).addTo(map);
+
+    map.fitBounds(activeLine.getBounds(), { padding: [40, 40] });
+  }
+
+  // 6. デバッグ機能: 画像をクリックした場所の座標 [Y, X] をポップアップ表示
+  // ※ピンの位置調整時に便利です
+  map.on('click', function(e) {
+    const y = Math.round(e.latlng.lat);
+    const x = Math.round(e.latlng.lng);
+    L.popup()
+      .setLatLng(e.latlng)
+      .setContent(`座標: [${y}, ${x}]`)
+      .openOn(map);
+  });
 </script>
 
 </body>
