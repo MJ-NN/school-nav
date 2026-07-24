@@ -63,6 +63,15 @@ HTML
     #app-screen { display: none; height: 100vh; width: 100vw; position: relative; }
     #map { height: 100vh; width: 100vw; background: #f1f5f9; z-index: 1; }
 
+    /* 🎯 座標計測ツール（画面右上） */
+    #coord-picker {
+      position: absolute; top: 16px; right: 16px; z-index: 2000;
+      background: rgba(15, 23, 42, 0.9); color: #00ffcc; font-family: monospace;
+      padding: 12px 16px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255, 255, 255, 0.2); pointer-events: auto; line-height: 1.5;
+    }
+    #coord-picker .title { font-weight: bold; color: #ffffff; margin-bottom: 4px; font-family: sans-serif; }
+
     /* Control Panel */
     .control-panel {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -149,9 +158,16 @@ HTML
   </div>
 </div>
 
-<!-- 🗺️ ナビ画面 -->
+<!-- 🗺️ メイン画面 -->
 <div id="app-screen">
   <div id="map"></div>
+
+  <!-- 🎯 リアルタイム座標取得パネル -->
+  <div id="coord-picker">
+    <div class="title">📍 座標キャリブレーション</div>
+    <div id="coord-display">マップ上をクリックしてください</div>
+  </div>
+
   <div class="control-panel">
     <div class="select-group">
       <div class="select-box">
@@ -193,7 +209,7 @@ HTML
 <script>
   const CORRECT_PASSWORD = "meijo2026";
   let map = null, activeLine = null, animMarker = null, animTimer = null;
-  let startMarker = null, endMarker = null;
+  let startMarker = null, endMarker = null, tempClickMarker = null;
 
   function checkPassword() {
     const input = document.getElementById('passInput').value;
@@ -214,7 +230,7 @@ HTML
     if (e.key === 'Enter') checkPassword();
   });
 
-  // 📍 1. スポット（目的地・出発地）一覧
+  // 📍 1. スポット一覧
   const spots = {
     "1g_1f_事務室": { name: "1号館 1F 事務室", node: "n_1g_1f_office" },
     "1g_2f_3a1":  { name: "1号館 2F 3A1",  node: "n_1g_2f_3a1" },
@@ -224,56 +240,46 @@ HTML
     "2g_4f_購買":   { name: "2号館 4F 購買",   node: "n_2g_4f_shop" }
   };
 
-  // 🗺️ 2. ノード（実際の画像上の位置座標 [Y, X]）
-  // 画像の左下を原点(0,0)、右上を(1000, 1000)として正確にマッピング修正
+  // 🗺️ 2. ノード座標設定（クリックして得た正確な値をここに入力します）
   const nodes = {
-    // 【1階 (1G 1F)】
-    "n_1g_1f_office":   { pos: [175, 275] }, // 1号館 1F 事務室
-    "n_1g_1f_corridor": { pos: [175, 240] }, // 事務室前 廊下
-    "n_1g_1f_stairs":   { pos: [175, 205] }, // 1号館 右側 階段マーク
-    "n_2g_1f_library":  { pos: [85,  450] }, // 2号館 1F 図書館
-
-    // 【2階 (1G 2F)】
-    "n_1g_2f_3a1":      { pos: [385, 235] }, // 1号館 2F 3A1
-    "n_1g_2f_corridor": { pos: [385, 205] }, // 2F 廊下
-    "n_1g_2f_stairs":   { pos: [385, 205] }, // 2F 階段
-
-    // 【3階 (1G 3F)】
-    "n_1g_3f_2s1":      { pos: [545, 290] }, // 1号館 3F 2S1
-    "n_1g_3f_corridor": { pos: [545, 205] }, // 3F 廊下
-    "n_1g_3f_stairs":   { pos: [545, 205] }, // 3F 階段
-
-    // 【4階 (1G 4F & 2G 4F)】
-    "n_1g_4f_2a2":      { pos: [800, 105] }, // 1号館 4F 2A2
-    "n_1g_4f_stairs":   { pos: [800, 205] }, // 4F 階段
-    "n_2g_4f_shop":     { pos: [650, 450] }  // 2号館 4F 購買
+    "n_1g_4f_2a2":      { pos: [700, 320] },
+    "n_1g_4f_corridor": { pos: [700, 360] },
+    "n_1g_4f_stairs":   { pos: [700, 385] },
+    "n_1g_4f_passage":  { pos: [700, 440] },
+    "n_2g_4f_passage":  { pos: [530, 600] },
+    "n_2g_4f_shop":     { pos: [530, 800] },
+    "n_1g_1f_office":   { pos: [170, 290] },
+    "n_1g_1f_corridor": { pos: [170, 220] },
+    "n_1g_1f_stairs":   { pos: [170, 200] },
+    "n_2g_1f_library":  { pos: [80,  450] },
+    "n_1g_2f_3a1":      { pos: [380, 240] },
+    "n_1g_2f_corridor": { pos: [380, 200] },
+    "n_1g_2f_stairs":   { pos: [380, 200] },
+    "n_1g_3f_2s1":      { pos: [530, 290] },
+    "n_1g_3f_corridor": { pos: [530, 200] },
+    "n_1g_3f_stairs":   { pos: [530, 200] }
   };
 
   // 🚶 3. ネットワーク接続
   const graph = {
-    // --- 1階 ---
+    "n_1g_4f_2a2":      { "n_1g_4f_corridor": 5 },
+    "n_1g_4f_corridor": { "n_1g_4f_2a2": 5, "n_1g_4f_stairs": 5 },
+    "n_1g_4f_stairs":   { "n_1g_4f_corridor": 5, "n_1g_4f_passage": 10, "n_1g_3f_stairs": 20 },
+    "n_1g_4f_passage":  { "n_1g_4f_stairs": 10, "n_2g_4f_passage": 20 },
+    "n_2g_4f_passage":  { "n_1g_4f_passage": 20, "n_2g_4f_shop": 20 },
+    "n_2g_4f_shop":     { "n_2g_4f_passage": 20 },
     "n_1g_1f_office":   { "n_1g_1f_corridor": 5 },
     "n_1g_1f_corridor": { "n_1g_1f_office": 5, "n_1g_1f_stairs": 10, "n_2g_1f_library": 30 },
     "n_2g_1f_library":  { "n_1g_1f_corridor": 30 },
     "n_1g_1f_stairs":   { "n_1g_1f_corridor": 10, "n_1g_2f_stairs": 20 },
-
-    // --- 2階 ---
     "n_1g_2f_3a1":      { "n_1g_2f_corridor": 5 },
     "n_1g_2f_corridor": { "n_1g_2f_3a1": 5, "n_1g_2f_stairs": 10 },
     "n_1g_2f_stairs":   { "n_1g_2f_corridor": 10, "n_1g_1f_stairs": 20, "n_1g_3f_stairs": 20 },
-
-    // --- 3階 ---
     "n_1g_3f_2s1":      { "n_1g_3f_corridor": 5 },
     "n_1g_3f_corridor": { "n_1g_3f_2s1": 5, "n_1g_3f_stairs": 10 },
-    "n_1g_3f_stairs":   { "n_1g_3f_corridor": 10, "n_1g_2f_stairs": 20, "n_1g_4f_stairs": 20 },
-
-    // --- 4階 ---
-    "n_1g_4f_2a2":      { "n_1g_4f_stairs": 20 },
-    "n_1g_4f_stairs":   { "n_1g_4f_2a2": 20, "n_1g_3f_stairs": 20, "n_2g_4f_shop": 25 },
-    "n_2g_4f_shop":     { "n_1g_4f_stairs": 25 }
+    "n_1g_3f_stairs":   { "n_1g_3f_corridor": 10, "n_1g_2f_stairs": 20, "n_1g_4f_stairs": 20 }
   };
 
-  // 📷 写真ヒントデータ
   const hintLandmarks = [
     { key: "1g_1f_事務室", title: "1号館1F 事務室前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=1F+事務室" },
     { key: "2g_1f_図書館", title: "2号館1F 図書館前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=2F+図書館" },
@@ -282,11 +288,26 @@ HTML
 
   function initMap() {
     if (map) return;
-    // 原点(0,0)を左下、(1000,1000)を右上としてバウンズ設定
     const bounds = [[0, 0], [1000, 1000]];
-    map = L.map('map', { crs: L.CRS.Simple, minZoom: -1.5, maxZoom: 2, maxBounds: bounds, zoomControl: false });
+    map = L.map('map', { crs: L.CRS.Simple, minZoom: -1.5, maxZoom: 3, maxBounds: bounds, zoomControl: false });
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
     map.fitBounds(bounds);
+
+    // 🎯 【確実な方法】クリックした地点の正確な座標を表示・打点する機能
+    map.on('click', function(e) {
+      const y = Math.round(e.latlng.lat);
+      const x = Math.round(e.latlng.lng);
+      
+      document.getElementById('coord-display').innerHTML = `<b>pos: [${y}, ${x}]</b>`;
+
+      if (tempClickMarker) map.removeLayer(tempClickMarker);
+      tempClickMarker = L.circleMarker([y, x], {
+        color: '#ef4444',
+        fillColor: '#ef4444',
+        fillOpacity: 1,
+        radius: 6
+      }).addTo(map);
+    });
 
     const startSelect = document.getElementById('startSelect');
     const endSelect = document.getElementById('endSelect');
@@ -299,21 +320,13 @@ HTML
       endSelect.appendChild(optEnd);
     });
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramStart = urlParams.get('start');
-    if (paramStart && spots[paramStart]) {
-      startSelect.value = paramStart;
-      endSelect.value = "1g_3f_2s1";
-    } else {
-      startSelect.value = "1g_1f_事務室";
-      endSelect.value = "1g_3f_2s1";
-    }
+    startSelect.value = "1g_4f_2a2";
+    endSelect.value = "2g_4f_購買";
 
     renderHintModal();
     showRoute();
   }
 
-  // 🧠 最短経路計算（ダイクストラ法）
   function dijkstra(startNode, targetNode) {
     let distances = {}, parents = {}, pq = [];
     Object.keys(nodes).forEach(node => {
@@ -367,7 +380,6 @@ HTML
     const startSpot = spots[startKey];
     const endSpot = spots[endKey];
 
-    // 最短経路を計算
     const routePath = dijkstra(startSpot.node, endSpot.node);
 
     if (routePath.length < 2) {
@@ -378,10 +390,8 @@ HTML
     startMarker = L.marker(routePath[0]).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
     endMarker = L.marker(routePath[routePath.length - 1]).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
 
-    // 青いルート線を描画
     activeLine = L.polyline(routePath, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(map);
 
-    // アニメーション用マーカー
     const pulseIcon = L.divIcon({ className: 'animated-pulse-icon', iconSize: [16, 16], iconAnchor: [8, 8] });
     animMarker = L.marker(routePath[0], { icon: pulseIcon }).addTo(map);
 
