@@ -216,65 +216,63 @@ HTML
 
   // 📍 1. スポット（目的地・出発地）一覧
   const spots = {
-    "1g_1f_事務室": { name: "1号館 1F 事務室", node: "n_1g_1f_corridor" },
-    "1g_2f_3a1":  { name: "1号館 2F 3A1",  node: "n_1g_2f_corridor" },
-    "1g_3f_2s1":  { name: "1号館 3F 2S1",  node: "n_1g_3f_corridor" },
-    "1g_4f_2a2":  { name: "1号館 4F 2A2",  node: "n_1g_4f_corridor" },
-    "2g_1f_図書館": { name: "2号館 1F 図書館", node: "n_2g_1f_corridor" },
-    "2g_4f_購買":   { name: "2号館 4F 購買",   node: "n_2g_4f_corridor" }
+    "1g_1f_事務室": { name: "1号館 1F 事務室", node: "n_1g_1f_office" },
+    "1g_2f_3a1":  { name: "1号館 2F 3A1",  node: "n_1g_2f_3a1" },
+    "1g_3f_2s1":  { name: "1号館 3F 2S1",  node: "n_1g_3f_2s1" },
+    "1g_4f_2a2":  { name: "1号館 4F 2A2",  node: "n_1g_4f_2a2" },
+    "2g_1f_図書館": { name: "2号館 1F 図書館", node: "n_2g_1f_library" },
+    "2g_4f_購買":   { name: "2号館 4F 購買",   node: "n_2g_4f_shop" }
   };
 
-  // 🗺️ 2. ノード（座標点）
+  // 🗺️ 2. ノード（実際の画像上の位置座標）
+  // 校長室を突き抜けず、右側の「階段マーク」を通るように正しく設定しています
   const nodes = {
-    // 1階
-    "n_1g_1f_corridor":  { pos: [-561, 351] },
-    "n_1g_1f_stairs":    { pos: [-561, 280] },
-    "n_2g_1f_corridor":  { pos: [-627, 520] },
+    // 【1階】
+    "n_1g_1f_office":   { pos: [-580, 500] }, // 事務室のピンの位置
+    "n_1g_1f_corridor": { pos: [-580, 520] }, // 1F 廊下
+    "n_1g_1f_stairs":   { pos: [-580, 580] }, // 1F 階段（マークの位置）
+    "n_2g_1f_library":  { pos: [-627, 520] },
 
-    // 2階
-    "n_1g_2f_corridor":  { pos: [-422, 272] },
-    "n_1g_2f_stairs":    { pos: [-422, 280] },
-    "n_1g_2f_es":        { pos: [-422, 320] }, // エスカレーター(2F)
+    // 【2階】
+    "n_1g_2f_3a1":      { pos: [-200, 500] }, // 2F 3A1
+    "n_1g_2f_corridor": { pos: [-200, 520] }, // 2F 廊下
+    "n_1g_2f_stairs":   { pos: [-200, 580] }, // 2F 階段（マークの位置）
 
-    // 3階
-    "n_1g_3f_corridor":  { pos: [-376, 277] },
-    "n_1g_3f_stairs":    { pos: [-376, 280] },
+    // 【3階】
+    "n_1g_3f_2s1":      { pos: [ -30, 500] }, // 3F 2S1のピンの位置
+    "n_1g_3f_corridor": { pos: [ -30, 520] }, // 3F 廊下
+    "n_1g_3f_stairs":   { pos: [ -30, 580] }, // 3F 階段（マークの位置）
 
-    // 4階
-    "n_1g_4f_corridor":  { pos: [-181, 228] },
-    "n_1g_4f_stairs":    { pos: [-181, 280] },
-    "n_1g_4f_es":        { pos: [-181, 320] }, // エスカレーター(4F)
-    "n_2g_4f_corridor":  { pos: [-191, 499] },
-
-    // 6階
-    "n_1g_6f_es":        { pos: [-418, 320] }  // エスカレーター(6F)
+    // 【4階】
+    "n_1g_4f_2a2":      { pos: [-181, 228] },
+    "n_1g_4f_stairs":   { pos: [-181, 580] }, // 4F 階段
+    "n_2g_4f_shop":     { pos: [-191, 499] }
   };
 
-  // 🚶 3. ネットワーク接続（双方向リンクの設定）
-  // 階を移動するための接続は「階段 ⇄ 階段」および「エスカレーター ⇄ エスカレーター」のみに限定
+  // 🚶 3. ネットワーク接続
+  // 階の移動（1F↔2F, 2F↔3Fなど）は「stairs（階段）」同士のみを線で結びます
   const graph = {
-    // 1階
-    "n_1g_1f_corridor": { "n_1g_1f_stairs": 10, "n_2g_1f_corridor": 30 },
-    "n_2g_1f_corridor": { "n_1g_1f_corridor": 30 },
-    "n_1g_1f_stairs":   { "n_1g_1f_corridor": 10, "n_1g_2f_stairs": 15 }, // 1F階段 ↔ 2F階段
+    // --- 1階 ---
+    "n_1g_1f_office":   { "n_1g_1f_corridor": 5 },
+    "n_1g_1f_corridor": { "n_1g_1f_office": 5, "n_1g_1f_stairs": 10, "n_2g_1f_library": 30 },
+    "n_2g_1f_library":  { "n_1g_1f_corridor": 30 },
+    // 階段から上階の階段へ
+    "n_1g_1f_stairs":   { "n_1g_1f_corridor": 10, "n_1g_2f_stairs": 20 },
 
-    // 2階
-    "n_1g_2f_corridor": { "n_1g_2f_stairs": 5, "n_1g_2f_es": 5 },
-    "n_1g_2f_stairs":   { "n_1g_2f_corridor": 5, "n_1g_1f_stairs": 15, "n_1g_3f_stairs": 15 }, // 2F階段 ↔ 1F/3F階段
-    "n_1g_2f_es":       { "n_1g_2f_corridor": 5, "n_1g_4f_es": 10 }, // 2Fエスカレーター ↔ 4Fエスカレーター
+    // --- 2階 ---
+    "n_1g_2f_3a1":      { "n_1g_2f_corridor": 5 },
+    "n_1g_2f_corridor": { "n_1g_2f_3a1": 5, "n_1g_2f_stairs": 10 },
+    "n_2g_2f_stairs":   { "n_1g_2f_corridor": 10, "n_1g_1f_stairs": 20, "n_1g_3f_stairs": 20 },
 
-    // 3階
-    "n_1g_3f_corridor": { "n_1g_3f_stairs": 5 },
-    "n_1g_3f_stairs":   { "n_1g_3f_corridor": 5, "n_1g_2f_stairs": 15, "n_1g_4f_stairs": 15 }, // 3F階段 ↔ 2F/4F階段
+    // --- 3階 ---
+    "n_1g_3f_2s1":      { "n_1g_3f_corridor": 5 },
+    "n_1g_3f_corridor": { "n_1g_3f_2s1": 5, "n_1g_3f_stairs": 10 },
+    "n_1g_3f_stairs":   { "n_1g_3f_corridor": 10, "n_1g_2f_stairs": 20, "n_1g_4f_stairs": 20 },
 
-    // 4階
-    "n_1g_4f_corridor": { "n_1g_4f_stairs": 5, "n_1g_4f_es": 5, "n_2g_4f_corridor": 25 },
-    "n_2g_4f_corridor": { "n_1g_4f_corridor": 25 },
-    "n_1g_4f_stairs":   { "n_1g_4f_corridor": 5, "n_1g_3f_stairs": 15 }, // 4F階段 ↔ 3F階段
-    "n_1g_4f_es":       { "n_1g_4f_corridor": 5, "n_1g_2f_es": 10, "n_1g_6f_es": 10 }, // 4Fエスカレーター ↔ 2F/6Fエスカレーター
-
-    // 6階
-    "n_1g_6f_es":       { "n_1g_4f_es": 10 } // 6Fエスカレーター ↔ 4Fエスカレーター
+    // --- 4階 ---
+    "n_1g_4f_2a2":      { "n_1g_4f_stairs": 20 },
+    "n_1g_4f_stairs":   { "n_1g_4f_2a2": 20, "n_1g_3f_stairs": 20, "n_2g_4f_shop": 25 },
+    "n_2g_4f_shop":     { "n_1g_4f_stairs": 25 }
   };
 
   // 📷 写真ヒントデータ
@@ -306,7 +304,7 @@ HTML
     const paramStart = urlParams.get('start');
     if (paramStart && spots[paramStart]) {
       startSelect.value = paramStart;
-      endSelect.value = "2g_4f_購買";
+      endSelect.value = "1g_3f_2s1";
     } else {
       startSelect.value = "1g_1f_事務室";
       endSelect.value = "1g_3f_2s1";
@@ -346,7 +344,7 @@ HTML
     let path = [];
     let curr = targetNode;
     while (curr) {
-      path.unshift(nodes[curr].pos);
+      if (nodes[curr]) path.unshift(nodes[curr].pos);
       curr = parents[curr];
     }
     return path;
@@ -370,13 +368,18 @@ HTML
     const startSpot = spots[startKey];
     const endSpot = spots[endKey];
 
-    // 最短通路ルートを計算
+    // 最短経路を計算
     const routePath = dijkstra(startSpot.node, endSpot.node);
+
+    if (routePath.length < 2) {
+      alert("ルートが見つかりませんでした");
+      return;
+    }
 
     startMarker = L.marker(routePath[0]).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
     endMarker = L.marker(routePath[routePath.length - 1]).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
 
-    // 🚶 通路・階段に沿った青い線を描画
+    // 青いルート線を描画
     activeLine = L.polyline(routePath, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(map);
 
     // アニメーション用マーカー
