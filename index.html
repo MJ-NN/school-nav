@@ -224,7 +224,7 @@ HTML
     "2g_4f_購買":   { name: "2号館 4F 購買",   node: "n_2g_4f_corridor" }
   };
 
-  // 🗺️ 2. 通路・階段・エスカレーターのネットワーク（ノード群）
+  // 🗺️ 2. ノード（座標点）
   const nodes = {
     // 1階
     "n_1g_1f_corridor":  { pos: [-561, 351] },
@@ -250,30 +250,31 @@ HTML
     "n_1g_6f_es":        { pos: [-418, 320] }  // エスカレーター(6F)
   };
 
-  // 🚶 3. 道のつながり（エッジ設定）
-  // cost: 移動の重み（距離・時間）。階段やエスカレーターを優先させたい調整も可能
+  // 🚶 3. ネットワーク接続（双方向リンクの設定）
+  // 階を移動するための接続は「階段 ⇄ 階段」および「エスカレーター ⇄ エスカレーター」のみに限定
   const graph = {
-    // 1階の廊下と階段
+    // 1階
     "n_1g_1f_corridor": { "n_1g_1f_stairs": 10, "n_2g_1f_corridor": 30 },
-    "n_1g_1f_stairs": { "n_1g_1f_corridor": 10, "n_1g_2f_stairs": 15 }, // 階段（1F ↔ 2F）
+    "n_2g_1f_corridor": { "n_1g_1f_corridor": 30 },
+    "n_1g_1f_stairs":   { "n_1g_1f_corridor": 10, "n_1g_2f_stairs": 15 }, // 1F階段 ↔ 2F階段
 
     // 2階
     "n_1g_2f_corridor": { "n_1g_2f_stairs": 5, "n_1g_2f_es": 5 },
-    "n_1g_2f_stairs": { "n_1g_2f_corridor": 5, "n_1g_1f_stairs": 15, "n_1g_3f_stairs": 15 },
-    
+    "n_1g_2f_stairs":   { "n_1g_2f_corridor": 5, "n_1g_1f_stairs": 15, "n_1g_3f_stairs": 15 }, // 2F階段 ↔ 1F/3F階段
+    "n_1g_2f_es":       { "n_1g_2f_corridor": 5, "n_1g_4f_es": 10 }, // 2Fエスカレーター ↔ 4Fエスカレーター
+
     // 3階
     "n_1g_3f_corridor": { "n_1g_3f_stairs": 5 },
-    "n_1g_3f_stairs": { "n_1g_3f_corridor": 5, "n_1g_2f_stairs": 15, "n_1g_4f_stairs": 15 },
+    "n_1g_3f_stairs":   { "n_1g_3f_corridor": 5, "n_1g_2f_stairs": 15, "n_1g_4f_stairs": 15 }, // 3F階段 ↔ 2F/4F階段
 
     // 4階
     "n_1g_4f_corridor": { "n_1g_4f_stairs": 5, "n_1g_4f_es": 5, "n_2g_4f_corridor": 25 },
-    "n_1g_4f_stairs": { "n_1g_4f_corridor": 5, "n_1g_3f_stairs": 15 },
     "n_2g_4f_corridor": { "n_1g_4f_corridor": 25 },
+    "n_1g_4f_stairs":   { "n_1g_4f_corridor": 5, "n_1g_3f_stairs": 15 }, // 4F階段 ↔ 3F階段
+    "n_1g_4f_es":       { "n_1g_4f_corridor": 5, "n_1g_2f_es": 10, "n_1g_6f_es": 10 }, // 4Fエスカレーター ↔ 2F/6Fエスカレーター
 
-    // ⚡ エスカレーター（2F・4F・6F 間のみ相互接続）
-    "n_1g_2f_es": { "n_1g_2f_corridor": 5, "n_1g_4f_es": 12 },
-    "n_1g_4f_es": { "n_1g_4f_corridor": 5, "n_1g_2f_es": 12, "n_1g_6f_es": 12 },
-    "n_1g_6f_es": { "n_1g_4f_es": 12 }
+    // 6階
+    "n_1g_6f_es":       { "n_1g_4f_es": 10 } // 6Fエスカレーター ↔ 4Fエスカレーター
   };
 
   // 📷 写真ヒントデータ
@@ -375,14 +376,13 @@ HTML
     startMarker = L.marker(routePath[0]).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
     endMarker = L.marker(routePath[routePath.length - 1]).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
 
-    // 🚶 通路に沿った青い線を描画
+    // 🚶 通路・階段に沿った青い線を描画
     activeLine = L.polyline(routePath, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(map);
 
     // アニメーション用マーカー
     const pulseIcon = L.divIcon({ className: 'animated-pulse-icon', iconSize: [16, 16], iconAnchor: [8, 8] });
     animMarker = L.marker(routePath[0], { icon: pulseIcon }).addTo(map);
 
-    // マルチセグメントに沿ったアニメーション処理
     let currentSegment = 0;
     let progress = 0;
 
