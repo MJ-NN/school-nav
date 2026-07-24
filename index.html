@@ -4,45 +4,190 @@ HTML
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>【位置調整モード】校内ナビ</title>
+  <title>名城大学附属高等学校 校内ナビ</title>
+  <!-- Leaflet CDN -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta name="robots" content="noindex, nofollow">
   <style>
-    body { margin: 0; padding: 0; font-family: sans-serif; }
-    #map { height: 85vh; width: 100vw; background: #f1f5f9; }
-    #panel {
-      height: 15vh; width: 100vw; background: #1e293b; color: white;
-      display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px;
+    :root {
+      --primary-color: #0f172a;
+      --accent-color: #2563eb;
+      --accent-hover: #1d4ed8;
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --glass-bg: rgba(255, 255, 255, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
-    button {
-      padding: 10px 20px; font-size: 14px; font-weight: bold; color: white;
-      background: #2563eb; border: none; border-radius: 8px; cursor: pointer;
+
+    * { box-sizing: border-box; font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+    body { margin: 0; padding: 0; background: #f8fafc; color: #334155; overflow: hidden; }
+
+    /* 🔑 パスワード認証画面 */
+    #pass-screen {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: var(--bg-gradient); display: flex; justify-content: center; align-items: center; z-index: 9999;
     }
-    .info { font-size: 12px; color: #94a3b8; }
+    .login-card {
+      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border); padding: 40px 32px; border-radius: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); text-align: center;
+      width: 90%; max-width: 380px; animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .login-card .logo-badge {
+      display: inline-block; background: #eff6ff; color: var(--accent-color);
+      font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; letter-spacing: 0.05em;
+    }
+    .login-card h2 { margin: 0 0 8px 0; color: var(--primary-color); font-size: 20px; font-weight: 700; line-height: 1.4; }
+    .login-card p { font-size: 13px; color: #64748b; margin: 0 0 24px 0; line-height: 1.5; }
+    .login-card input {
+      width: 100%; padding: 12px 16px; font-size: 15px; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; margin-bottom: 16px; text-align: center; outline: none; transition: all 0.2s;
+    }
+    .login-card input:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+    .login-card button {
+      width: 100%; padding: 12px; font-size: 15px; font-weight: 600; color: white;
+      background: var(--accent-color); border: none; border-radius: 10px; cursor: pointer;
+      transition: background 0.2s, transform 0.1s; box-shadow: var(--shadow-md);
+    }
+    .login-card button:hover { background: var(--accent-hover); }
+    .login-card button:active { transform: scale(0.98); }
+    .error-msg { color: #ef4444; font-size: 12px; margin-top: 12px; font-weight: 500; display: none; }
+
+    /* 🗺️ メイン画面 */
+    #app-screen { display: none; height: 100vh; width: 100vw; position: relative; }
+    #map { height: 100vh; width: 100vw; background: #f1f5f9; z-index: 1; }
+
+    /* Floating UI パネル */
+    .control-panel {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; width: 92%; max-width: 680px;
+      background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border); border-radius: 20px; padding: 16px 20px;
+      box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 12px;
+    }
+    .select-group { display: flex; gap: 12px; width: 100%; }
+    .select-box { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .select-box label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .select-wrapper { position: relative; }
+    select {
+      width: 100%; padding: 10px 14px; font-size: 14px; font-weight: 500;
+      color: var(--primary-color); border: 1px solid #cbd5e1; border-radius: 10px;
+      background-color: #ffffff; outline: none; cursor: pointer; appearance: none; transition: all 0.2s;
+    }
+    .select-wrapper::after {
+      content: "▾"; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 12px; color: #94a3b8; pointer-events: none;
+    }
+    select:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+
+    .btn-nav {
+      width: 100%; padding: 12px; font-size: 15px; font-weight: 700; color: white;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;
+    }
+    .btn-nav:hover { box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); transform: translateY(-1px); }
+    .btn-nav:active { transform: translateY(0); }
+
+    /* アニメーション用パルス円アイコン */
+    .animated-pulse-icon {
+      background: #2563eb;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
+    }
+
+    @media (max-width: 640px) {
+      .control-panel { bottom: 16px; padding: 14px; }
+      .select-group { flex-direction: column; gap: 8px; }
+    }
   </style>
 </head>
 <body>
 
-<div id="map"></div>
-<div id="panel">
-  <div class="info">マップ上をタップ（クリック）すると、新しいピンを追加できます。ドラッグで微調整も可能です。</div>
-  <button onclick="copyData()">📋 全座標データをコピーして送信</button>
+<!-- 🔑 パスワード画面 -->
+<div id="pass-screen">
+  <div class="login-card">
+    <span class="logo-badge">MEIJO NAVI</span>
+    <h2>名城大学附属高等学校<br>校内ナビゲーション</h2>
+    <p>パスワードを入力して開始してください</p>
+    <input type="password" id="passInput" placeholder="パスワード">
+    <button onclick="checkPassword()">ログイン</button>
+    <div id="errorMsg" class="error-msg">パスワードが正しくありません</div>
+  </div>
+</div>
+
+<!-- 🗺️ ナビ画面 -->
+<div id="app-screen">
+  <div id="map"></div>
+  <div class="control-panel">
+    <div class="select-group">
+      <div class="select-box">
+        <label for="startSelect">出発地</label>
+        <div class="select-wrapper">
+          <select id="startSelect"></select>
+        </div>
+      </div>
+      <div class="select-box">
+        <label for="endSelect">目的地</label>
+        <div class="select-wrapper">
+          <select id="endSelect"></select>
+        </div>
+      </div>
+    </div>
+    <button class="btn-nav" onclick="showRoute()">
+      <span>ルート案内を開始</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+    </button>
+  </div>
 </div>
 
 <script>
-  const bounds = [[-700, 0], [0, 1000]];
-  const map = L.map('map', {
-    crs: L.CRS.Simple,
-    minZoom: -1.5,
-    maxZoom: 2,
-    maxBounds: bounds
+  const CORRECT_PASSWORD = "meijo2026";
+
+  let map = null;
+  let activeLine = null;
+  let animMarker = null;
+  let animTimer = null;
+  let startMarker = null;
+  let endMarker = null;
+
+  function checkPassword() {
+    const input = document.getElementById('passInput').value;
+    if (input === CORRECT_PASSWORD) {
+      document.getElementById('pass-screen').style.opacity = '0';
+      document.getElementById('pass-screen').style.transition = 'opacity 0.3s ease';
+      setTimeout(() => {
+        document.getElementById('pass-screen').style.display = 'none';
+        document.getElementById('app-screen').style.display = 'block';
+        initMap();
+      }, 300);
+    } else {
+      document.getElementById('errorMsg').style.display = 'block';
+    }
+  }
+
+  document.getElementById('passInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') checkPassword();
   });
 
-  L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
-  map.fitBounds(bounds);
-
-  // 既存の69箇所の座標データ
-  let spots = {
+  // 🎯 追加・確定された全86箇所の座標データ
+  const spots = {
+    "1g_1f_渉外室": { "name": "1号館 1F 渉外室", "pos": [-562, 226] },
+    "1g_1f_3s1": { "name": "1号館 1F 3S1", "pos": [-586, 230] },
+    "1g_1f_3s2": { "name": "1号館 1F 3S2", "pos": [-611, 228] },
+    "1g_1f_3s3": { "name": "1号館 1F 3S3", "pos": [-641, 224] },
+    "1g_1f_3s4": { "name": "1号館 1F 3S4", "pos": [-657, 228] },
+    "1g_1f_保健室": { "name": "1号館 1F 保健室", "pos": [-634, 278] },
+    "1g_1f_事務室": { "name": "1号館 1F 事務室", "pos": [-561, 351] },
+    "1g_1f_小会議室": { "name": "1号館 1F 小会議室", "pos": [-645, 331] },
     "1g_2f_2a1": { "name": "1号館 2F 2A1", "pos": [-425, 228] },
     "1g_2f_3a1": { "name": "1号館 2F 3A1", "pos": [-422, 272] },
     "1g_2f_3a12": { "name": "1号館 2F 3A12", "pos": [-420, 310] },
@@ -75,6 +220,15 @@ HTML
     "1g_4f_2a8": { "name": "1号館 4F 2A8", "pos": [-206, 274] },
     "1g_4f_2a9": { "name": "1号館 4F 2A9", "pos": [-237, 278] },
     "1g_4f_生徒会顧問室": { "name": "1号館 4F 生徒会顧問室", "pos": [-165, 280] },
+    "1g_5f_3a11": { "name": "1号館 5F 3A11", "pos": [-567, 129] },
+    "1g_5f_2a10": { "name": "1号館 5F 2A10", "pos": [-584, 123] },
+    "1g_5f_1_16": { "name": "1号館 5F 1-16", "pos": [-639, 132] },
+    "1g_5f_1_15": { "name": "1号館 5F 1-15", "pos": [-666, 127] },
+    "1g_5f_1_14": { "name": "1号館 5F 1-14", "pos": [-675, 178] },
+    "1g_5f_1_10": { "name": "1号館 5F 1-10", "pos": [-562, 180] },
+    "1g_5f_1_11": { "name": "1号館 5F 1-11", "pos": [-587, 182] },
+    "1g_5f_1_12": { "name": "1号館 5F 1-12", "pos": [-606, 179] },
+    "1g_5f_1_13": { "name": "1号館 5F 1-13", "pos": [-638, 180] },
     "1g_6f_1_1": { "name": "1号館 6F 1-1", "pos": [-418, 130] },
     "1g_6f_1_2": { "name": "1号館 6F 1-2", "pos": [-441, 128] },
     "1g_6f_1_3": { "name": "1号館 6F 1-3", "pos": [-465, 127] },
@@ -92,10 +246,11 @@ HTML
     "1g_8f_情報処理室": { "name": "1号館 8F 情報処理室", "pos": [-217, 124] },
     "1g_8f_大会議室": { "name": "1号館 8F 大会議室", "pos": [-174, 177] },
     "1g_8f_放送室": { "name": "1号館 8F 放送室", "pos": [-220, 176] },
-    "2g_4f_購買": { "name": "2号館 4F 購買", "pos": [-191, 499] },
-    "2g_4f_音楽室": { "name": "2号館 4F 音楽室", "pos": [-212, 561] },
+    "2g_1f_図書館": { "name": "2号館 1F 図書館", "pos": [-627, 520] },
     "2g_2f_更衣室A": { "name": "2号館 2F 更衣室A", "pos": [-475, 463] },
     "2g_2f_更衣室B": { "name": "2号館 2F 更衣室B", "pos": [-469, 497] },
+    "2g_4f_購買": { "name": "2号館 4F 購買", "pos": [-191, 499] },
+    "2g_4f_音楽室": { "name": "2号館 4F 音楽室", "pos": [-212, 561] },
     "3g_1f_計測実験室": { "name": "3号館 1F 計測実験室", "pos": [-126, 663] },
     "3g_1f_材料実験室": { "name": "3号館 1F 材料実験室", "pos": [-154, 670] },
     "3g_1f_溶接実習室": { "name": "3号館 1F 溶接実習室", "pos": [-184, 670] },
@@ -116,47 +271,100 @@ HTML
     "4g_4f_商業管理室": { "name": "4号館 4F 商業管理室", "pos": [-511, 877] }
   };
 
-  let markers = {};
+  function initMap() {
+    if (map) return;
 
-  // 既存ピンの描画
-  Object.keys(spots).forEach(key => {
-    addMarkerToMap(key, spots[key].name, spots[key].pos);
-  });
+    const bounds = [[-700, 0], [0, 1000]];
 
-  // マップクリックで新規ピン追加
-  let newCount = 1;
-  map.on('click', function(e) {
-    const name = prompt("追加する部屋の名前を入力してください（例: 1号館 1F 事務室）:", `新規スポット ${newCount}`);
-    if (!name) return;
-
-    const key = `new_spot_${Date.now()}`;
-    const pos = [Math.round(e.latlng.lat), Math.round(e.latlng.lng)];
-    spots[key] = { name: name, pos: pos };
-
-    addMarkerToMap(key, name, pos);
-    newCount++;
-  });
-
-  function addMarkerToMap(key, name, pos) {
-    const marker = L.marker(pos, { draggable: true }).addTo(map);
-    marker.bindTooltip(name, { permanent: true, direction: 'top' });
-
-    marker.on('dragend', function(e) {
-      const newPos = e.target.getLatLng();
-      spots[key].pos = [Math.round(newPos.lat), Math.round(newPos.lng)];
+    map = L.map('map', {
+      crs: L.CRS.Simple,
+      minZoom: -1.5,
+      maxZoom: 2,
+      maxBounds: bounds,
+      zoomControl: false
     });
 
-    markers[key] = marker;
+    L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
+    map.fitBounds(bounds);
+
+    const startSelect = document.getElementById('startSelect');
+    const endSelect = document.getElementById('endSelect');
+
+    // プルダウン作成
+    Object.keys(spots).forEach(key => {
+      const spot = spots[key];
+
+      const optStart = document.createElement('option');
+      optStart.value = key; optStart.textContent = spot.name;
+      startSelect.appendChild(optStart);
+
+      const optEnd = document.createElement('option');
+      optEnd.value = key; optEnd.textContent = spot.name;
+      endSelect.appendChild(optEnd);
+    });
+
+    // 初期選択（例: 1号館1F 事務室 → 1号館5F 1-10）
+    startSelect.value = "1g_1f_事務室";
+    endSelect.value = "1g_5f_1_10";
+
+    showRoute();
   }
 
-  function copyData() {
-    const jsonStr = JSON.stringify(spots, null, 2);
-    navigator.clipboard.writeText(jsonStr).then(() => {
-      alert("全座標データをクリップボードにコピーしました！メッセージ欄に貼り付けて送信してください。");
-    }).catch(err => {
-      console.log(jsonStr);
-      alert("コピーに失敗しました。コンソール出力をご確認ください。");
+  function showRoute() {
+    const startKey = document.getElementById('startSelect').value;
+    const endKey = document.getElementById('endSelect').value;
+
+    if (startKey === endKey) {
+      alert("出発地と目的地が異なる場所を選択してください");
+      return;
+    }
+
+    // クリーニング
+    if (activeLine) map.removeLayer(activeLine);
+    if (startMarker) map.removeLayer(startMarker);
+    if (endMarker) map.removeLayer(endMarker);
+    if (animMarker) map.removeLayer(animMarker);
+    if (animTimer) clearInterval(animTimer);
+
+    const startSpot = spots[startKey];
+    const endSpot = spots[endKey];
+
+    // 選ばれた2点のみピンを表示
+    startMarker = L.marker(startSpot.pos).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
+    endMarker = L.marker(endSpot.pos).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
+
+    // 背景の移動軌跡ライン
+    activeLine = L.polyline([startSpot.pos, endSpot.pos], {
+      color: '#cbd5e1',
+      weight: 4,
+      dashArray: '6, 6',
+      opacity: 0.8
+    }).addTo(map);
+
+    // アニメーション用パルス点
+    const pulseIcon = L.divIcon({
+      className: 'animated-pulse-icon',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
     });
+
+    animMarker = L.marker(startSpot.pos, { icon: pulseIcon }).addTo(map);
+
+    let step = 0;
+    const totalSteps = 100;
+    const startY = startSpot.pos[0], startX = startSpot.pos[1];
+    const endY = endSpot.pos[0], endX = endSpot.pos[1];
+
+    animTimer = setInterval(() => {
+      step = (step + 1) % (totalSteps + 1);
+      const progress = step / totalSteps;
+      const currentY = startY + (endY - startY) * progress;
+      const currentX = startX + (endX - startX) * progress;
+
+      animMarker.setLatLng([currentY, currentX]);
+    }, 25);
+
+    map.fitBounds(activeLine.getBounds(), { padding: [100, 100] });
   }
 </script>
 
