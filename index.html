@@ -271,6 +271,131 @@ HTML
     "4g_4f_商業管理室": { "name": "4号館 4F 商業管理室", "pos": [-511, 877] }
   };
 
+  // 🪜 経由地（階段・エレベーター・主要連絡通路）
+  const transitNodes = {
+    "1g_stair": { "pos": [-380, 250] },       // 1号館 中央階段
+    "1g_west_stair": { "pos": [-550, 150] },  // 1号館 西階段
+    "2g_stair": { "pos": [-300, 500] },       // 2号館 階段・EV
+    "3g_stair": { "pos": [-160, 750] },       // 3号館 階段
+    "4g_stair": { "pos": [-450, 750] },       // 4号館 階段
+    "bridge_1_2": { "pos": [-330, 400] },     // 1号館-2号館 渡り廊下
+    "bridge_2_3": { "pos": [-180, 600] },     // 2号館-3号館 渡り廊下
+    "bridge_3_4": { "pos": [-300, 750] }      // 3号館-4号館 渡り廊下
+  };
+
+  // 🗺️ 全ノード結合
+  const allNodes = { ...spots, ...transitNodes };
+
+  // 🔗 各ノード間の接続（グラフ構造）
+  const edges = [
+    // 1号館内部の部屋 ↔ 階段
+    ["1g_1f_事務室", "1g_stair"], ["1g_1f_保健室", "1g_stair"], ["1g_1f_渉外室", "1g_west_stair"],
+    ["1g_1f_3s1", "1g_west_stair"], ["1g_1f_3s2", "1g_west_stair"], ["1g_1f_3s3", "1g_west_stair"], ["1g_1f_3s4", "1g_west_stair"],
+    ["1g_2f_2a1", "1g_stair"], ["1g_2f_3a1", "1g_stair"], ["1g_2f_生徒指導室", "1g_stair"],
+    ["1g_3f_生物室", "1g_stair"], ["1g_3f_化学室", "1g_stair"], ["1g_3f_物理室", "bridge_1_2"], ["1g_3f_alルーム", "bridge_1_2"],
+    ["1g_4f_2a2", "1g_stair"], ["1g_4f_2a3", "1g_stair"], ["1g_4f_2a7", "1g_stair"],
+    ["1g_5f_3a11", "1g_west_stair"], ["1g_5f_1_10", "1g_west_stair"], ["1g_5f_1_16", "1g_west_stair"],
+    ["1g_6f_1_1", "1g_west_stair"], ["1g_6f_1_9", "1g_west_stair"],
+    ["1g_7f_職員室", "1g_west_stair"], ["1g_8f_ict2", "1g_west_stair"],
+
+    // 1号館内の階段同士（階差移動）
+    ["1g_stair", "1g_west_stair"],
+
+    // 1号館 ↔ 2号館 接続
+    ["1g_stair", "bridge_1_2"],
+    ["bridge_1_2", "2g_stair"],
+
+    // 2号館内部 ↔ 階段
+    ["2g_1f_図書館", "2g_stair"], ["2g_2f_更衣室A", "2g_stair"], ["2g_2f_更衣室B", "2g_stair"],
+    ["2g_4f_購買", "2g_stair"], ["2g_4f_音楽室", "2g_stair"],
+
+    // 2号館 ↔ 3号館 接続
+    ["2g_stair", "bridge_2_3"],
+    ["bridge_2_3", "3g_stair"],
+
+    // 3号館内部 ↔ 階段
+    ["3g_1f_計測実験室", "3g_stair"], ["3g_1f_材料実験室", "3g_stair"], ["3g_1f_溶接実習室", "3g_stair"],
+    ["3g_2f_avl", "3g_stair"], ["3g_2f_学習ルーム", "3g_stair"], ["3g_3f_製図室", "3g_stair"],
+    ["3g_4f_特別教室", "3g_stair"], ["3g_4f_作法室", "3g_stair"],
+
+    // 3号館 ↔ 4号館 接続
+    ["3g_stair", "bridge_3_4"],
+    ["bridge_3_4", "4g_stair"],
+
+    // 4号館内部 ↔ 階段
+    ["4g_1f_機械システム系", "4g_stair"], ["4g_1f_原動機実習室", "4g_stair"], ["4g_1f_cam実習室", "4g_stair"],
+    ["4g_2f_印刷室", "4g_stair"], ["4g_2f_機械システム管理室", "4g_stair"], ["4g_3f_cad1", "4g_stair"],
+    ["4g_3f_cad2", "4g_stair"], ["4g_4f_パソコン3", "4g_stair"], ["4g_4f_パソコン4", "4g_stair"], ["4g_4f_商業管理室", "4g_stair"]
+  ];
+
+  // 🧮 2点間の直線距離計算（コスト計算）
+  function getDistance(pos1, pos2) {
+    const dy = pos1[0] - pos2[0];
+    const dx = pos1[1] - pos2[1];
+    return Math.sqrt(dy * dy + dx * dx);
+  }
+
+  // 🧠 ダイクストラ法による最短経路検索
+  function findShortestPath(startKey, endKey) {
+    const distances = {};
+    const previous = {};
+    const unvisited = new Set();
+
+    Object.keys(allNodes).forEach(node => {
+      distances[node] = Infinity;
+      previous[node] = null;
+      unvisited.add(node);
+    });
+
+    distances[startKey] = 0;
+
+    while (unvisited.size > 0) {
+      let current = null;
+      let nearestDist = Infinity;
+
+      unvisited.forEach(node => {
+        if (distances[node] < nearestDist) {
+          nearestDist = distances[node];
+          current = node;
+        }
+      });
+
+      if (current === null || current === endKey) break;
+
+      unvisited.delete(current);
+
+      // 隣接ノードの探索
+      edges.forEach(([u, v]) => {
+        let neighbor = null;
+        if (u === current) neighbor = v;
+        if (v === current) neighbor = u;
+
+        if (neighbor && unvisited.has(neighbor)) {
+          const alt = distances[current] + getDistance(allNodes[current].pos, allNodes[neighbor].pos);
+          if (alt < distances[neighbor]) {
+            distances[neighbor] = alt;
+            previous[neighbor] = current;
+          }
+        }
+      });
+    }
+
+    // 経路の復元
+    const path = [];
+    let curr = endKey;
+    while (curr !== null) {
+      path.unshift(curr);
+      curr = previous[curr];
+    }
+
+    // 孤立等で繋がらなかった場合は直通ルートにフォールバック
+    if (path[0] !== startKey) {
+      return [startKey, endKey];
+    }
+
+    return path;
+  }
+
   function initMap() {
     if (map) return;
 
@@ -305,7 +430,7 @@ HTML
 
     // 初期選択設定
     startSelect.value = "1g_1f_事務室";
-    endSelect.value = "1g_5f_1_10";
+    endSelect.value = "4g_4f_パソコン3";
 
     showRoute();
   }
@@ -329,15 +454,19 @@ HTML
     const startSpot = spots[startKey];
     const endSpot = spots[endKey];
 
-    // 選ばれた2点のピン表示
+    // 最短経路上にあるノード列を取得
+    const pathKeys = findShortestPath(startKey, endKey);
+    const pathCoords = pathKeys.map(k => allNodes[k].pos);
+
+    // ピン表示
     startMarker = L.marker(startSpot.pos).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
     endMarker = L.marker(endSpot.pos).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
 
-    // 移動軌跡ライン
-    activeLine = L.polyline([startSpot.pos, endSpot.pos], {
-      color: '#cbd5e1',
-      weight: 4,
-      dashArray: '6, 6',
+    // 経由地を含めた折り返しラインを表示
+    activeLine = L.polyline(pathCoords, {
+      color: '#2563eb',
+      weight: 5,
+      dashArray: '8, 8',
       opacity: 0.8
     }).addTo(map);
 
@@ -348,18 +477,29 @@ HTML
       iconAnchor: [8, 8]
     });
 
-    animMarker = L.marker(startSpot.pos, { icon: pulseIcon }).addTo(map);
+    animMarker = L.marker(pathCoords[0], { icon: pulseIcon }).addTo(map);
 
+    // 🌀 複数セグメントを跨ぐアニメーション処理
+    let pathIndex = 0;
     let step = 0;
-    const totalSteps = 100;
-    const startY = startSpot.pos[0], startX = startSpot.pos[1];
-    const endY = endSpot.pos[0], endX = endSpot.pos[1];
+    const stepsPerSegment = 30;
 
     animTimer = setInterval(() => {
-      step = (step + 1) % (totalSteps + 1);
-      const progress = step / totalSteps;
-      const currentY = startY + (endY - startY) * progress;
-      const currentX = startX + (endX - startX) * progress;
+      step++;
+      if (step > stepsPerSegment) {
+        step = 0;
+        pathIndex++;
+        if (pathIndex >= pathCoords.length - 1) {
+          pathIndex = 0; // ループ再生
+        }
+      }
+
+      const p1 = pathCoords[pathIndex];
+      const p2 = pathCoords[pathIndex + 1];
+      const progress = step / stepsPerSegment;
+
+      const currentY = p1[0] + (p2[0] - p1[0]) * progress;
+      const currentX = p1[1] + (p2[1] - p1[1]) * progress;
 
       animMarker.setLatLng([currentY, currentX]);
     }, 25);
