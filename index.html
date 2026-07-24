@@ -19,7 +19,7 @@ HTML
       --accent-color: #2563eb;
       --accent-hover: #1d4ed8;
       --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      --glass-bg: rgba(255, 255, 255, 0.88);
+      --glass-bg: rgba(255, 255, 255, 0.92);
       --glass-border: rgba(255, 255, 255, 0.4);
       --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -66,11 +66,11 @@ HTML
 
     /* Floating UI パネル */
     .control-panel {
-      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
       z-index: 1000; width: 92%; max-width: 680px;
       background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--glass-border); border-radius: 20px; padding: 16px 20px;
-      box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 12px;
+      box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 10px;
     }
     .select-group { display: flex; gap: 12px; width: 100%; }
     .select-box { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -87,6 +87,13 @@ HTML
     }
     select:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
 
+    .btn-help {
+      background: none; border: none; color: #2563eb; font-size: 12px; font-weight: 600;
+      cursor: pointer; text-decoration: underline; padding: 2px 0; align-self: flex-start;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .btn-help:hover { color: #1d4ed8; }
+
     .btn-nav {
       width: 100%; padding: 12px; font-size: 15px; font-weight: 700; color: white;
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
@@ -94,18 +101,38 @@ HTML
       transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;
     }
     .btn-nav:hover { box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); transform: translateY(-1px); }
-    .btn-nav:active { transform: translateY(0); }
 
-    /* アニメーション用パルス円アイコン */
+    /* 🖼️ 現在地ヒント用 モーダル */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+      z-index: 9000; display: none; justify-content: center; align-items: center;
+    }
+    .modal-card {
+      background: white; border-radius: 20px; padding: 24px; width: 90%; max-width: 520px;
+      max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); animation: fadeIn 0.2s ease-out;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-header h3 { margin: 0; font-size: 18px; color: var(--primary-color); }
+    .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; }
+    
+    .hint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .hint-card {
+      border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: all 0.2s; text-align: center; background: #f8fafc;
+    }
+    .hint-card:hover { border-color: var(--accent-color); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .hint-card img { width: 100%; height: 100px; object-fit: cover; background: #e2e8f0; }
+    .hint-card-title { font-size: 12px; font-weight: 700; padding: 8px 6px; color: #334155; }
+
+    /* アニメーション用パルスアイコン */
     .animated-pulse-icon {
-      background: #2563eb;
-      border: 3px solid #ffffff;
-      border-radius: 50%;
+      background: #2563eb; border: 3px solid #ffffff; border-radius: 50%;
       box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
     }
 
     @media (max-width: 640px) {
-      .control-panel { bottom: 16px; padding: 14px; }
+      .control-panel { bottom: 12px; padding: 14px; }
       .select-group { flex-direction: column; gap: 8px; }
     }
   </style>
@@ -142,6 +169,12 @@ HTML
         </div>
       </div>
     </div>
+
+    <!-- 💡 現在地ヒントボタン -->
+    <button class="btn-help" onclick="openModal()">
+      <span>📍 現在地がわからないとき（目印から探す）</span>
+    </button>
+
     <button class="btn-nav" onclick="showRoute()">
       <span>ルート案内を開始</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -149,15 +182,23 @@ HTML
   </div>
 </div>
 
+<!-- 🖼️ 目印選択モーダル -->
+<div id="hintModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>近くにある目印を選んでください</h3>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="hint-grid" id="hintContainer"></div>
+  </div>
+</div>
+
 <script>
   const CORRECT_PASSWORD = "meijo2026";
 
   let map = null;
-  let activeLine = null;
-  let animMarker = null;
-  let animTimer = null;
-  let startMarker = null;
-  let endMarker = null;
+  let activeLine = null, animMarker = null, animTimer = null;
+  let startMarker = null, endMarker = null;
 
   function checkPassword() {
     const input = document.getElementById('passInput').value;
@@ -178,7 +219,7 @@ HTML
     if (e.key === 'Enter') checkPassword();
   });
 
-  // 🎯 追加・確定された全86箇所の座標データ
+  // 全86箇所の座標データ
   const spots = {
     "1g_1f_渉外室": { "name": "1号館 1F 渉外室", "pos": [-562, 226] },
     "1g_1f_3s1": { "name": "1号館 1F 3S1", "pos": [-586, 230] },
@@ -271,44 +312,71 @@ HTML
     "4g_4f_商業管理室": { "name": "4号館 4F 商業管理室", "pos": [-511, 877] }
   };
 
+  // 📷 写真・目印ヒントのサンプルデータ（後で画像パスを修正できます）
+  const hintLandmarks = [
+    { key: "1g_1f_事務室", title: "1号館1F 事務室前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=1F+事務室" },
+    { key: "2g_1f_図書館", title: "2号館1F 図書館前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=2F+図書館" },
+    { key: "1g_7f_職員室", title: "1号館7F 職員室前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=7F+職員室" },
+    { key: "2g_4f_購買", title: "2号館4F 購買前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=4F+購買" }
+  ];
+
   function initMap() {
     if (map) return;
 
     const bounds = [[-700, 0], [0, 1000]];
-
-    map = L.map('map', {
-      crs: L.CRS.Simple,
-      minZoom: -1.5,
-      maxZoom: 2,
-      maxBounds: bounds,
-      zoomControl: false
-    });
-
+    map = L.map('map', { crs: L.CRS.Simple, minZoom: -1.5, maxZoom: 2, maxBounds: bounds, zoomControl: false });
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
     map.fitBounds(bounds);
 
     const startSelect = document.getElementById('startSelect');
     const endSelect = document.getElementById('endSelect');
 
-    // プルダウン作成
     Object.keys(spots).forEach(key => {
       const spot = spots[key];
-
-      const optStart = document.createElement('option');
-      optStart.value = key; optStart.textContent = spot.name;
+      const optStart = document.createElement('option'); optStart.value = key; optStart.textContent = spot.name;
       startSelect.appendChild(optStart);
-
-      const optEnd = document.createElement('option');
-      optEnd.value = key; optEnd.textContent = spot.name;
+      const optEnd = document.createElement('option'); optEnd.value = key; optEnd.textContent = spot.name;
       endSelect.appendChild(optEnd);
     });
 
-    // 初期選択（例: 1号館1F 事務室 → 1号館5F 1-10）
-    startSelect.value = "1g_1f_事務室";
-    endSelect.value = "1g_5f_1_10";
+    // 🔗 ① URLパラメータ（QRコード）判定の処理
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramStart = urlParams.get('start');
 
+    if (paramStart && spots[paramStart]) {
+      startSelect.value = paramStart;
+      endSelect.value = "1g_7f_職員室"; // デフォルト目的地
+    } else {
+      startSelect.value = "1g_1f_事務室";
+      endSelect.value = "1g_5f_1_10";
+    }
+
+    renderHintModal();
     showRoute();
   }
+
+  // 🖼️ モーダルに目印カードを出力
+  function renderHintModal() {
+    const container = document.getElementById('hintContainer');
+    container.innerHTML = "";
+    hintLandmarks.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'hint-card';
+      card.innerHTML = `
+        <img src="${item.img}" alt="${item.title}">
+        <div class="hint-card-title">${item.title}</div>
+      `;
+      card.onclick = () => {
+        document.getElementById('startSelect').value = item.key;
+        closeModal();
+        showRoute();
+      };
+      container.appendChild(card);
+    });
+  }
+
+  function openModal() { document.getElementById('hintModal').style.display = 'flex'; }
+  function closeModal() { document.getElementById('hintModal').style.display = 'none'; }
 
   function showRoute() {
     const startKey = document.getElementById('startSelect').value;
@@ -319,7 +387,6 @@ HTML
       return;
     }
 
-    // クリーニング
     if (activeLine) map.removeLayer(activeLine);
     if (startMarker) map.removeLayer(startMarker);
     if (endMarker) map.removeLayer(endMarker);
@@ -329,25 +396,14 @@ HTML
     const startSpot = spots[startKey];
     const endSpot = spots[endKey];
 
-    // 選ばれた2点のみピンを表示
     startMarker = L.marker(startSpot.pos).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
     endMarker = L.marker(endSpot.pos).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
 
-    // 背景の移動軌跡ライン
     activeLine = L.polyline([startSpot.pos, endSpot.pos], {
-      color: '#cbd5e1',
-      weight: 4,
-      dashArray: '6, 6',
-      opacity: 0.8
+      color: '#cbd5e1', weight: 4, dashArray: '6, 6', opacity: 0.8
     }).addTo(map);
 
-    // アニメーション用パルス点
-    const pulseIcon = L.divIcon({
-      className: 'animated-pulse-icon',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    });
-
+    const pulseIcon = L.divIcon({ className: 'animated-pulse-icon', iconSize: [16, 16], iconAnchor: [8, 8] });
     animMarker = L.marker(startSpot.pos, { icon: pulseIcon }).addTo(map);
 
     let step = 0;
@@ -360,7 +416,6 @@ HTML
       const progress = step / totalSteps;
       const currentY = startY + (endY - startY) * progress;
       const currentX = startX + (endX - startX) * progress;
-
       animMarker.setLatLng([currentY, currentX]);
     }, 25);
 
