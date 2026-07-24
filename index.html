@@ -90,22 +90,22 @@ HTML
     maxZoom: 2
   });
 
-  // 2. 配置図画像の縦横解像度（ピクセル単位）
+  // 2. 配置図画像の縦横比率に合わせた解像度
   const imgWidth = 1400;
   const imgHeight = 1000;
   const bounds = [[0, 0], [imgHeight, imgWidth]];
 
-  // 3. アップロードした配置図画像（R8教室配置図.png）を読み込み
-  const image = L.imageOverlay('R8教室配置図.png', bounds).addTo(map);
+  // 3. アップロードしたファイル名（R8教室配置図-1.png）を指定して読み込み
+  const image = L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
   map.fitBounds(bounds);
 
   // 4. 主要な教室・目的地の座標定義 [y, x]
   const spots = {
-    office:   { name: "1号館 1F 事務室",       pos: [115, 305] },
-    library:  { name: "1号館 1F 図書館",       pos: [70, 485] },
-    staff7f:  { name: "1号館 7F 職員室",       pos: [625, 60] },
-    cad1:     { name: "4号館 3F CAD室1",       pos: [355, 850] },
-    pc3:      { name: "4号館 4F パソコン教室3", pos: [450, 955] }
+    office:   { name: "1号館 1F 事務室",       pos: [200, 340] },
+    library:  { name: "1号館 1F 図書館",       pos: [100, 500] },
+    staff7f:  { name: "1号館 7F 職員室",       pos: [670, 70] },
+    cad1:     { name: "4号館 3F CAD室1",       pos: [380, 810] },
+    pc3:      { name: "4号館 4F パソコン教室3", pos: [370, 885] }
   };
 
   // マーカー（ピン）を設置
@@ -142,8 +142,7 @@ HTML
     map.fitBounds(activeLine.getBounds(), { padding: [40, 40] });
   }
 
-  // 6. デバッグ機能: 画像をクリックした場所の座標 [Y, X] をポップアップ表示
-  // ※ピンの位置調整時に便利です
+  // 6. デバッグ機能: 画像をクリックした場所の座標 [Y, X] を表示
   map.on('click', function(e) {
     const y = Math.round(e.latlng.lat);
     const x = Math.round(e.latlng.lng);
