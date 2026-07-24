@@ -1,4 +1,3 @@
-HTML
 <!DOCTYPE html><html lang="ja"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,11 +21,9 @@ HTML
       --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
-
     * { box-sizing: border-box; font-family: 'Inter', 'Noto Sans JP', sans-serif; }
     body { margin: 0; padding: 0; background: #cbd5e1; color: #334155; overflow: hidden; }
 
-    /* 🔑 パスワード認証画面 */
     #pass-screen {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: var(--bg-gradient); display: flex; justify-content: center; align-items: center; z-index: 9999;
@@ -58,11 +55,14 @@ HTML
     .login-card button:active { transform: scale(0.98); }
     .error-msg { color: #ef4444; font-size: 12px; margin-top: 12px; font-weight: 500; display: none; }
 
-    /* 🗺️ メイン画面 */
     #app-screen { display: none; height: 100vh; width: 100vw; position: relative; }
     #map { height: 100vh; width: 100vw; background: #cbd5e1; z-index: 1; }
+    #mapError {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1500;
+      background: #fee2e2; color: #991b1b; padding: 8px 16px; border-radius: 10px; font-size: 12px;
+      font-weight: 600; display: none; box-shadow: var(--shadow-md);
+    }
 
-    /* Floating UI パネル */
     .control-panel {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
       z-index: 1000; width: 92%; max-width: 680px;
@@ -100,7 +100,12 @@ HTML
     }
     .btn-nav:hover { box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); transform: translateY(-1px); }
 
-    /* 🖼️ 現在地ヒント用 モーダル */
+    #routeSummary {
+      font-size: 12px; color: #475569; background: #f1f5f9; border-radius: 10px;
+      padding: 8px 12px; display: none;
+    }
+    #routeSummary b { color: var(--primary-color); }
+
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
@@ -113,7 +118,7 @@ HTML
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .modal-header h3 { margin: 0; font-size: 18px; color: var(--primary-color); }
     .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; }
-    
+
     .hint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
     .hint-card {
       border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; cursor: pointer;
@@ -123,10 +128,19 @@ HTML
     .hint-card img { width: 100%; height: 100px; object-fit: cover; background: #e2e8f0; }
     .hint-card-title { font-size: 12px; font-weight: 700; padding: 8px 6px; color: #334155; }
 
-    /* アニメーション用パルスアイコン */
     .animated-pulse-icon {
       background: #2563eb; border: 3px solid #ffffff; border-radius: 50%;
       box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
+    }
+    /* 階段・エスカレーターの見た目（縞々 / 「エスカレーター」表記） */
+    .stair-icon {
+      width: 22px; height: 22px; border-radius: 4px; border: 2px solid #92400e;
+      background: repeating-linear-gradient(45deg, #fbbf24, #fbbf24 4px, #92400e 4px, #92400e 8px);
+    }
+    .escalator-icon {
+      width: 26px; height: 26px; border-radius: 4px; border: 2px solid #065f46;
+      background: #10b981; color: white; font-size: 8px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1;
     }
 
     @media (max-width: 640px) {
@@ -137,7 +151,6 @@ HTML
 </head>
 <body>
 
-  <!-- 🔑 パスワード画面 -->
   <div id="pass-screen">
     <div class="login-card">
       <span class="logo-badge">MEIJO NAVI</span>
@@ -149,9 +162,11 @@ HTML
     </div>
   </div>
 
-  <!-- 🗺️ ナビ画面 -->
   <div id="app-screen">
     <div id="map"></div>
+    <div id="mapError">背景の図面画像を読み込めませんでした。パスを確認してください。</div>
+    <div id="calibBadge" style="position:absolute; top:12px; right:12px; z-index:1500; display:none; background:#111827; color:#fff; font-size:11px; font-weight:700; padding:6px 12px; border-radius:20px; box-shadow:var(--shadow-md); cursor:pointer;" onclick="toggleCalibMode()">📍座標取得モード: ON（クリックで座標コピー）</div>
+    <div id="calibToast" style="position:absolute; bottom:100px; left:50%; transform:translateX(-50%); z-index:1600; background:#111827; color:#fff; font-size:13px; font-family:monospace; padding:8px 14px; border-radius:10px; display:none;"></div>
     <div class="control-panel">
       <div class="select-group">
         <div class="select-box">
@@ -168,10 +183,11 @@ HTML
         </div>
       </div>
 
-      <!-- 💡 現在地ヒントボタン -->
       <button class="btn-help" onclick="openModal()">
         <span>📍 現在地がわからないとき（写真から現在地を探す）</span>
       </button>
+
+      <div id="routeSummary"></div>
 
       <button class="btn-nav" onclick="showRoute()">
         <span>ルート案内を開始</span>
@@ -180,7 +196,6 @@ HTML
     </div>
   </div>
 
-  <!-- 🖼️ 目印選択モーダル -->
   <div id="hintModal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
@@ -195,10 +210,22 @@ HTML
     const CORRECT_PASSWORD = "meijo2026";
 
     let map = null;
-    let activeLine = null, animMarker = null, animTimer = null;
-    let startMarker = null, endMarker = null;
+    let routeLayers = []; // 複数区間のpolyline・アイコンをまとめて管理
+    let animMarker = null, animTimer = null;
 
-    const bounds = [[-1000, 0], [0, 1000]];
+    // ==========================================================================
+    // ① 画像(図面)の設定
+    //    このプロジェクトは index.html と 画像ファイルを同じフォルダ(リポジトリの
+    //    一番上の階層)に置くだけの、フレームワークなしの単純な静的サイトです。
+    //    そのため public フォルダなどは不要。画像ファイル名を変えない限り、
+    //    このままで動きます。
+    // ==========================================================================
+    const IMAGE_PATH = encodeURI("/R8教室配置図-1.png");
+    // 実画像サイズ 2338 x 1654px に合わせて設定済み（歪みなし）。
+    // 画像ファイルを差し替える場合は、新しい画像の実サイズに合わせて必ず更新すること。
+    const IMAGE_WIDTH = 2338;
+    const IMAGE_HEIGHT = 1654;
+    const bounds = [[-IMAGE_HEIGHT, 0], [0, IMAGE_WIDTH]];
 
     function checkPassword() {
       const input = document.getElementById('passInput').value;
@@ -214,11 +241,18 @@ HTML
         document.getElementById('errorMsg').style.display = 'block';
       }
     }
-
     document.getElementById('passInput').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') checkPassword();
     });
 
+    // ==========================================================================
+    // ② 部屋データ
+    // ⚠️ 重要: bounds を実画像サイズ(2338x1654)に修正したことで、以前の座標系
+    // (プレースホルダーの1000x1000想定で作られていた可能性が高い)とズレます。
+    // 下の「座標取得モード」でこのファイルをブラウザで開き、URLの末尾に
+    // ?calib=1 を付けてアクセス（または地図上で "c" キー）→ 各部屋を実際の
+    // 図面上でクリックして正確な座標をコピーし、下の pos 値を置き換えてください。
+    // ==========================================================================
     const spots = {
       "1g_1f_渉外室": { "name": "1号館 1F 渉外室", "pos": [-562, 226] },
       "1g_1f_3s1": { "name": "1号館 1F 3S1", "pos": [-586, 230] },
@@ -311,7 +345,6 @@ HTML
       "4g_4f_商業管理室": { "name": "4号館 4F 商業管理室", "pos": [-511, 877] }
     };
 
-    // 📷 写真・目印ヒントデータ
     const hintLandmarks = [
       { key: "1g_1f_事務室", title: "1号館1F 事務室前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=1F+事務室" },
       { key: "2g_1f_図書館", title: "2号館1F 図書館前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=2F+図書館" },
@@ -319,19 +352,267 @@ HTML
       { key: "2g_4f_購買", title: "2号館4F 購買前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=4F+購買" }
     ];
 
+    // ==========================================================================
+    // ③ 階段・エスカレーターのノードを手動で定義する
+    //    ★★★ ここが今回の本質的な修正点です ★★★
+    //    実際の図面を見て、各棟・各階の「階段の実際の座標(pos)」に書き換えてください。
+    //    - stairNodes: 各棟・各階に何本でも置ける。同じ stairId のノードが縦につながる。
+    //    - escalatorNodes: 定義上、2階・4階・6階のみで乗り降り可能。
+    //      (=1階・3階・5階・7階・8階にはエスカレーターの乗降ノードを作らない)
+    // ==========================================================================
+    const stairNodes = [
+      // { id: 一意なID, building: 棟, floor: 階, stairId: 同じ階段グループの識別子, pos: [y, x] }
+      // --- 1号館 階段A（例: 東側階段） TODO: 実座標に置き換え ---
+      { id: "1g_stairA_1f", building: "1g", floor: 1, stairId: "1g_stairA", pos: [-600, 400] },
+      { id: "1g_stairA_2f", building: "1g", floor: 2, stairId: "1g_stairA", pos: [-460, 400] },
+      { id: "1g_stairA_3f", building: "1g", floor: 3, stairId: "1g_stairA", pos: [-310, 400] },
+      { id: "1g_stairA_4f", building: "1g", floor: 4, stairId: "1g_stairA", pos: [-170, 400] },
+      { id: "1g_stairA_5f", building: "1g", floor: 5, stairId: "1g_stairA", pos: [-600, 155] },
+      { id: "1g_stairA_6f", building: "1g", floor: 6, stairId: "1g_stairA", pos: [-460, 155] },
+      { id: "1g_stairA_7f", building: "1g", floor: 7, stairId: "1g_stairA", pos: [-320, 135] },
+      { id: "1g_stairA_8f", building: "1g", floor: 8, stairId: "1g_stairA", pos: [-180, 150] },
+      // --- 2号館 階段 TODO ---
+      { id: "2g_stairA_1f", building: "2g", floor: 1, stairId: "2g_stairA", pos: [-600, 480] },
+      { id: "2g_stairA_2f", building: "2g", floor: 2, stairId: "2g_stairA", pos: [-470, 480] },
+      { id: "2g_stairA_4f", building: "2g", floor: 4, stairId: "2g_stairA", pos: [-200, 520] },
+      // --- 3号館 階段 TODO ---
+      { id: "3g_stairA_1f", building: "3g", floor: 1, stairId: "3g_stairA", pos: [-155, 700] },
+      { id: "3g_stairA_2f", building: "3g", floor: 2, stairId: "3g_stairA", pos: [-160, 760] },
+      { id: "3g_stairA_3f", building: "3g", floor: 3, stairId: "3g_stairA", pos: [-140, 810] },
+      { id: "3g_stairA_4f", building: "3g", floor: 4, stairId: "3g_stairA", pos: [-160, 870] },
+      // --- 4号館 階段 TODO ---
+      { id: "4g_stairA_1f", building: "4g", floor: 1, stairId: "4g_stairA", pos: [-400, 690] },
+      { id: "4g_stairA_2f", building: "4g", floor: 2, stairId: "4g_stairA", pos: [-420, 745] },
+      { id: "4g_stairA_3f", building: "4g", floor: 3, stairId: "4g_stairA", pos: [-450, 815] },
+      { id: "4g_stairA_4f", building: "4g", floor: 4, stairId: "4g_stairA", pos: [-460, 878] }
+    ];
+
+    const escalatorNodes = [
+      // エスカレーターは 2F・4F・6F のみ乗降可能。それ以外の階のノードは作らない。
+      { id: "1g_escA_2f", building: "1g", floor: 2, escId: "1g_escA", pos: [-500, 250] }, // TODO
+      { id: "1g_escA_4f", building: "1g", floor: 4, escId: "1g_escA", pos: [-200, 250] }, // TODO
+      { id: "1g_escA_6f", building: "1g", floor: 6, escId: "1g_escA", pos: [-500, 150] }  // TODO
+    ];
+
+    // 各棟・各階に自動生成する「廊下代表点」（部屋群の重心）。
+    // 実際の廊下形状に合わせて手動で座標を上書きしても構いません。
+    function buildCorridorNodes() {
+      const groups = {}; // key: "building_floor" -> [pos,...]
+      Object.keys(spots).forEach(key => {
+        const m = key.match(/^(\d+g)_(\d+)f_/);
+        if (!m) return;
+        const building = m[1], floor = parseInt(m[2], 10);
+        const gkey = building + "_" + floor;
+        (groups[gkey] = groups[gkey] || []).push(spots[key].pos);
+      });
+      const corridors = {};
+      Object.keys(groups).forEach(gkey => {
+        const pts = groups[gkey];
+        const avgY = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+        const avgX = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+        corridors[gkey] = { id: "corridor_" + gkey, pos: [avgY, avgX] };
+      });
+      return corridors;
+    }
+
+    // 棟と棟をつなぐ連絡通路（渡り廊下など）。
+    // TODO: 実際に建物間が繋がっている階・座標に合わせて追加/修正してください。
+    const buildingConnectors = [
+      // { fromBuilding, fromFloor, toBuilding, toFloor }
+      { fromBuilding: "1g", fromFloor: 1, toBuilding: "2g", toFloor: 1 },
+      { fromBuilding: "2g", fromFloor: 1, toBuilding: "3g", toFloor: 1 },
+      { fromBuilding: "3g", fromFloor: 1, toBuilding: "4g", toFloor: 1 }
+    ];
+
+    // ==========================================================================
+    // ④ グラフ構築 + ダイクストラ法による最短経路探索
+    // ==========================================================================
+    let graphNodes = {}; // id -> { pos:[y,x], meta:{...} }
+    let graphAdj = {};   // id -> [{to, w}]
+
+    function dist(a, b) {
+      const dy = a[0] - b[0], dx = a[1] - b[1];
+      return Math.sqrt(dy * dy + dx * dx);
+    }
+
+    function addNode(id, pos, meta) {
+      graphNodes[id] = { pos, meta: meta || {} };
+      if (!graphAdj[id]) graphAdj[id] = [];
+    }
+    function addEdge(a, b, weight, meta) {
+      if (!(a in graphNodes) || !(b in graphNodes)) return;
+      const w = weight != null ? weight : dist(graphNodes[a].pos, graphNodes[b].pos);
+      graphAdj[a].push({ to: b, w, meta: meta || {} });
+      graphAdj[b].push({ to: a, w, meta: meta || {} });
+    }
+
+    const STAIR_VERTICAL_COST = 60;      // 階段1フロア分の追加コスト
+    const ESCALATOR_VERTICAL_COST = 20;  // エスカレーターは階段より速い想定
+
+    function buildGraph() {
+      graphNodes = {};
+      graphAdj = {};
+
+      const corridors = buildCorridorNodes();
+
+      // 廊下ノード登録
+      Object.keys(corridors).forEach(gkey => {
+        const c = corridors[gkey];
+        const [building, floorStr] = gkey.split("_");
+        addNode(c.id, c.pos, { type: "corridor", building, floor: parseInt(floorStr, 10) });
+      });
+
+      // 各部屋 -> 同じ棟・階の廊下ノードへ接続
+      Object.keys(spots).forEach(key => {
+        const m = key.match(/^(\d+g)_(\d+)f_/);
+        if (!m) return;
+        const building = m[1], floor = parseInt(m[2], 10);
+        const gkey = building + "_" + floor;
+        addNode(key, spots[key].pos, { type: "room", building, floor });
+        if (corridors[gkey]) addEdge(key, corridors[gkey].id);
+      });
+
+      // 階段ノード登録 + 同一 stairId 内で上下階を接続
+      const stairGroups = {};
+      stairNodes.forEach(s => {
+        addNode(s.id, s.pos, { type: "stair", building: s.building, floor: s.floor, groupId: s.stairId });
+        (stairGroups[s.stairId] = stairGroups[s.stairId] || []).push(s);
+        // 同じ階の廊下ノードと接続
+        const gkey = s.building + "_" + s.floor;
+        if (corridors[gkey]) addEdge(s.id, corridors[gkey].id);
+      });
+      Object.values(stairGroups).forEach(group => {
+        group.sort((a, b) => a.floor - b.floor);
+        for (let i = 0; i < group.length - 1; i++) {
+          const floorDiff = group[i + 1].floor - group[i].floor;
+          addEdge(group[i].id, group[i + 1].id, STAIR_VERTICAL_COST * floorDiff, { via: "stairs" });
+        }
+      });
+
+      // エスカレーターノード登録（2F/4F/6Fのみ存在させる）+ 同一escId内で接続
+      const escGroups = {};
+      escalatorNodes.forEach(e => {
+        if (![2, 4, 6].includes(e.floor)) return; // 安全策：それ以外の階は無視
+        addNode(e.id, e.pos, { type: "escalator", building: e.building, floor: e.floor, groupId: e.escId });
+        (escGroups[e.escId] = escGroups[e.escId] || []).push(e);
+        const gkey = e.building + "_" + e.floor;
+        if (corridors[gkey]) addEdge(e.id, corridors[gkey].id);
+      });
+      Object.values(escGroups).forEach(group => {
+        group.sort((a, b) => a.floor - b.floor);
+        for (let i = 0; i < group.length - 1; i++) {
+          const floorDiff = group[i + 1].floor - group[i].floor;
+          addEdge(group[i].id, group[i + 1].id, ESCALATOR_VERTICAL_COST * floorDiff, { via: "escalator" });
+        }
+      });
+
+      // 棟間の連絡通路
+      buildingConnectors.forEach(c => {
+        const fromKey = c.fromBuilding + "_" + c.fromFloor;
+        const toKey = c.toBuilding + "_" + c.toFloor;
+        if (corridors[fromKey] && corridors[toKey]) {
+          addEdge(corridors[fromKey].id, corridors[toKey].id);
+        }
+      });
+    }
+
+    function dijkstra(startId, endId) {
+      const distMap = {}; const prev = {}; const visited = new Set();
+      Object.keys(graphAdj).forEach(id => { distMap[id] = Infinity; });
+      if (!(startId in distMap) || !(endId in distMap)) return null;
+      distMap[startId] = 0;
+      const queue = [[0, startId]];
+      while (queue.length) {
+        queue.sort((a, b) => a[0] - b[0]);
+        const [d, u] = queue.shift();
+        if (visited.has(u)) continue;
+        visited.add(u);
+        if (u === endId) break;
+        (graphAdj[u] || []).forEach(edge => {
+          if (visited.has(edge.to)) return;
+          const nd = d + edge.w;
+          if (nd < distMap[edge.to]) {
+            distMap[edge.to] = nd;
+            prev[edge.to] = { node: u, edge };
+            queue.push([nd, edge.to]);
+          }
+        });
+      }
+      if (distMap[endId] === Infinity) return null;
+      const path = []; let cur = endId;
+      while (cur !== startId) {
+        const step = prev[cur];
+        path.unshift({ node: cur, via: step ? step.edge.meta.via : null });
+        cur = step.node;
+      }
+      path.unshift({ node: startId, via: null });
+      return path;
+    }
+
+    // ==========================================================================
+    // ⑤ UI・描画
+    // ==========================================================================
+    // ==========================================================================
+    // 座標取得モード：地図をクリックすると、その地点の正確な [y, x] 座標を
+    // 表示＆クリップボードにコピーする。実画像の上でクリックするだけで
+    // 各部屋・階段・エスカレーターの正確な座標を集められる。
+    // 有効化方法：URLに ?calib=1 を付けるか、キーボードで "c" キーを押す。
+    // ==========================================================================
+    let calibMode = false;
+    let calibMarkers = [];
+
+    function toggleCalibMode(forceOn) {
+      calibMode = forceOn !== undefined ? forceOn : !calibMode;
+      document.getElementById('calibBadge').style.display = calibMode ? 'block' : 'none';
+      if (!calibMode) {
+        calibMarkers.forEach(m => map.removeLayer(m));
+        calibMarkers = [];
+        document.getElementById('calibToast').style.display = 'none';
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'c' || e.key === 'C') { if (map) toggleCalibMode(); }
+    });
+
+    function onCalibClick(e) {
+      if (!calibMode) return;
+      const y = Math.round(e.latlng.lat);
+      const x = Math.round(e.latlng.lng);
+      const text = `[${y}, ${x}]`;
+
+      const marker = L.circleMarker(e.latlng, { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
+      calibMarkers.push(marker);
+
+      const toast = document.getElementById('calibToast');
+      toast.style.display = 'block';
+      toast.textContent = text + ' をコピーしました';
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+    }
+
     function initMap() {
       if (map) return;
 
-      map = L.map('map', { 
-        crs: L.CRS.Simple, 
-        minZoom: -2, 
-        maxZoom: 3, 
+      map = L.map('map', {
+        crs: L.CRS.Simple,
+        minZoom: -2,
+        maxZoom: 3,
         zoomControl: false,
         maxBounds: bounds,
         maxBoundsViscosity: 0.8
       });
 
-      L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
+      const overlay = L.imageOverlay(IMAGE_PATH, bounds);
+      overlay.on('error', () => { document.getElementById('mapError').style.display = 'block'; });
+      overlay.on('load', () => { document.getElementById('mapError').style.display = 'none'; });
+      overlay.addTo(map);
+
+      map.on('click', onCalibClick);
+      const urlParamsCalib = new URLSearchParams(window.location.search);
+      if (urlParamsCalib.get('calib') === '1') toggleCalibMode(true);
 
       const startSelect = document.getElementById('startSelect');
       const endSelect = document.getElementById('endSelect');
@@ -344,7 +625,6 @@ HTML
         endSelect.appendChild(optEnd);
       });
 
-      // 🔗 URLパラメータ（QRコード）判定
       const urlParams = new URLSearchParams(window.location.search);
       const paramStart = urlParams.get('start');
 
@@ -356,6 +636,7 @@ HTML
         endSelect.value = "1g_5f_1_10";
       }
 
+      buildGraph();
       renderHintModal();
 
       setTimeout(() => {
@@ -365,7 +646,6 @@ HTML
       }, 100);
     }
 
-    // 🖼️ 目印モーダルの表示構築
     function renderHintModal() {
       const container = document.getElementById('hintContainer');
       container.innerHTML = "";
@@ -376,7 +656,6 @@ HTML
           <img src="${item.img}" alt="${item.title}">
           <div class="hint-card-title">${item.title}</div>
         `;
-        // 🔥 写真を選択した際に、現在地としてセットし即座にマップ・経路を更新！
         card.onclick = () => {
           selectCurrentLocation(item.key);
           closeModal();
@@ -385,71 +664,114 @@ HTML
       });
     }
 
-    // 📍 現在地（出発地）を特定して更新する核心関数
     function selectCurrentLocation(spotKey) {
       if (!spots[spotKey]) return;
-      
-      const startSelect = document.getElementById('startSelect');
-      startSelect.value = spotKey;
-      
-      // マップと経路案内を再計算・描画
+      document.getElementById('startSelect').value = spotKey;
       showRoute();
     }
 
     function openModal() { document.getElementById('hintModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('hintModal').style.display = 'none'; }
 
-    // 🗺️ ルート描画・アニメーション処理
+    function clearRouteLayers() {
+      routeLayers.forEach(l => map.removeLayer(l));
+      routeLayers = [];
+      if (animMarker) { map.removeLayer(animMarker); animMarker = null; }
+      if (animTimer) { cancelAnimationFrame(animTimer); animTimer = null; }
+    }
+
+    function iconForVia(via) {
+      if (via === "stairs") return L.divIcon({ className: '', html: '<div class="stair-icon" title="階段"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+      if (via === "escalator") return L.divIcon({ className: '', html: '<div class="escalator-icon" title="エスカレーター">ESC</div>', iconSize: [26, 26], iconAnchor: [13, 13] });
+      return null;
+    }
+
     function showRoute() {
       if (!map) return;
 
       const startKey = document.getElementById('startSelect').value;
       const endKey = document.getElementById('endSelect').value;
+      const summaryEl = document.getElementById('routeSummary');
 
       if (startKey === endKey) {
         alert("出発地と目的地が同じ場所です。違う場所を選択してください。");
         return;
       }
 
-      // レイヤーおよびアニメーションタイマーの初期化
-      if (activeLine) map.removeLayer(activeLine);
-      if (startMarker) map.removeLayer(startMarker);
-      if (endMarker) map.removeLayer(endMarker);
-      if (animMarker) map.removeLayer(animMarker);
-      if (animTimer) clearInterval(animTimer);
+      clearRouteLayers();
 
-      const startSpot = spots[startKey];
-      const endSpot = spots[endKey];
+      const path = dijkstra(startKey, endKey);
+      if (!path) {
+        summaryEl.style.display = 'block';
+        summaryEl.innerHTML = '<b>経路が見つかりませんでした。</b>階段/エスカレーターのノード設定を確認してください。';
+        return;
+      }
 
-      // 出発地と目的地のマーカー設置
-      startMarker = L.marker(startSpot.pos).addTo(map).bindPopup(`<b>[現在地] ${startSpot.name}</b>`).openPopup();
-      endMarker = L.marker(endSpot.pos).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
+      const positions = path.map(step => graphNodes[step.node].pos);
 
-      // 破線ルートの追加
-      activeLine = L.polyline([startSpot.pos, endSpot.pos], {
-        color: '#2563eb', weight: 4, dashArray: '6, 6', opacity: 0.8
-      }).addTo(map);
+      // 経路の線（複数区間）
+      const line = L.polyline(positions, { color: '#2563eb', weight: 4, dashArray: '6, 6', opacity: 0.85 }).addTo(map);
+      routeLayers.push(line);
 
-      // 移動アニメーション用マーカー
+      // 出発・目的地マーカー
+      const startMarker = L.marker(spots[startKey].pos).addTo(map).bindPopup(`<b>[現在地] ${spots[startKey].name}</b>`).openPopup();
+      const endMarker = L.marker(spots[endKey].pos).addTo(map).bindPopup(`<b>[目的地] ${spots[endKey].name}</b>`);
+      routeLayers.push(startMarker, endMarker);
+
+      // 階段・エスカレーターの通過点にアイコン表示
+      let stairsCount = 0, escalatorCount = 0;
+      path.forEach(step => {
+        if (step.via === "stairs" || step.via === "escalator") {
+          const icon = iconForVia(step.via);
+          if (icon) {
+            const m = L.marker(graphNodes[step.node].pos, { icon }).addTo(map);
+            routeLayers.push(m);
+          }
+          if (step.via === "stairs") stairsCount++;
+          if (step.via === "escalator") escalatorCount++;
+        }
+      });
+
+      summaryEl.style.display = 'block';
+      summaryEl.innerHTML = `<b>${spots[startKey].name}</b> → <b>${spots[endKey].name}</b>　`
+        + (stairsCount ? `🪜階段${stairsCount}回　` : '')
+        + (escalatorCount ? `⏫エスカレーター${escalatorCount}回` : '')
+        + (!stairsCount && !escalatorCount ? '（同一フロア内）' : '');
+
+      // アニメーション（区間をつないで移動）
       const pulseIcon = L.divIcon({ className: 'animated-pulse-icon', iconSize: [16, 16], iconAnchor: [8, 8] });
-      animMarker = L.marker(startSpot.pos, { icon: pulseIcon }).addTo(map);
+      animMarker = L.marker(positions[0], { icon: pulseIcon }).addTo(map);
 
-      let step = 0;
-      const totalSteps = 100;
-      const startY = startSpot.pos[0], startX = startSpot.pos[1];
-      const endY = endSpot.pos[0], endX = endSpot.pos[1];
+      const segLengths = [];
+      for (let i = 0; i < positions.length - 1; i++) segLengths.push(dist(positions[i], positions[i + 1]) || 1);
+      const totalLen = segLengths.reduce((a, b) => a + b, 0) || 1;
 
-      animTimer = setInterval(() => {
-        step = (step + 1) % (totalSteps + 1);
-        const progress = step / totalSteps;
-        const currentY = startY + (endY - startY) * progress;
-        const currentX = startX + (endX - startX) * progress;
-        animMarker.setLatLng([currentY, currentX]);
-      }, 25);
+      let progress = 0;
+      const speed = totalLen / 4000; // 単位/msの目安
+      let lastTs = null;
 
-      // 地図サイズを再計算後、経路に合わせてズーム
+      function frame(ts) {
+        if (lastTs == null) lastTs = ts;
+        const dt = ts - lastTs; lastTs = ts;
+        progress += speed * dt;
+        if (progress > totalLen) progress = 0;
+
+        let d = progress, segIdx = 0;
+        while (segIdx < segLengths.length && d > segLengths[segIdx]) { d -= segLengths[segIdx]; segIdx++; }
+        if (segIdx >= segLengths.length) segIdx = segLengths.length - 1;
+
+        const a = positions[segIdx], b = positions[segIdx + 1] || positions[segIdx];
+        const t = segLengths[segIdx] ? d / segLengths[segIdx] : 0;
+        const curY = a[0] + (b[0] - a[0]) * t;
+        const curX = a[1] + (b[1] - a[1]) * t;
+        animMarker.setLatLng([curY, curX]);
+
+        animTimer = requestAnimationFrame(frame);
+      }
+      animTimer = requestAnimationFrame(frame);
+
       map.invalidateSize();
-      map.fitBounds(activeLine.getBounds(), { padding: [100, 100] });
+      map.fitBounds(line.getBounds(), { padding: [100, 100] });
     }
   </script>
 </body>
