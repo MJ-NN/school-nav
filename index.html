@@ -1,12 +1,3 @@
-パスワード機能を追加するアイデアですね！素晴らしい判断だと思います。これで学校関係者や当日来校された方だけに限定して利用してもらえるようになります。
-
-仕組みとしては、「来校者向けの合言葉（パスワード）」を正しく入力しないとマップや操作パネルが表示されないように制限をかけます。
-
-🔒 パスワード機能つき index.html コード
-以下のコードでは、初期パスワードを meijo2026 に設定しています（コード内の const CORRECT_PASSWORD = "..." の部分で好きな文字列に変更できます）。
-
-GitHubの index.html を編集（✏️ペンマーク）し、全上書き保存（Commit）してください。
-
 HTML
 <!DOCTYPE html>
 <html lang="ja">
@@ -22,7 +13,7 @@ HTML
   <style>
     body { margin: 0; padding: 0; font-family: sans-serif; background: #f0f2f5; }
 
-    /* パスワード入力画面のスタイル */
+    /* パスワード画面 */
     #pass-screen {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -41,98 +32,48 @@ HTML
       width: 85%;
       max-width: 360px;
     }
-    .login-box h2 {
-      margin-top: 0;
-      color: #1a365d;
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-    .login-box p {
-      font-size: 13px;
-      color: #4a5568;
-      margin-bottom: 20px;
-    }
+    .login-box h2 { margin-top: 0; color: #1a365d; font-size: 18px; margin-bottom: 8px; }
+    .login-box p { font-size: 13px; color: #4a5568; margin-bottom: 20px; }
     .login-box input {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #cbd5e0;
-      border-radius: 6px;
-      box-sizing: border-box;
-      margin-bottom: 15px;
-      text-align: center;
+      width: 100%; padding: 10px; font-size: 16px;
+      border: 1px solid #cbd5e0; border-radius: 6px;
+      box-sizing: border-box; margin-bottom: 15px; text-align: center;
     }
     .login-box button {
-      width: 100%;
-      padding: 10px;
-      font-size: 15px;
-      font-weight: bold;
-      color: white;
-      background-color: #e53e3e;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      width: 100%; padding: 10px; font-size: 15px; font-weight: bold;
+      color: white; background-color: #e53e3e; border: none; border-radius: 6px; cursor: pointer;
     }
-    .error-msg {
-      color: #e53e3e;
-      font-size: 12px;
-      margin-top: 10px;
-      display: none;
-    }
+    .error-msg { color: #e53e3e; font-size: 12px; margin-top: 10px; display: none; }
 
-    /* マップ画面のスタイル */
+    /* ナビ画面 */
     #app-screen { display: none; }
     #map { height: 78vh; width: 100vw; background: #e2e8f0; }
     
     .control-panel {
-      height: 22vh;
-      padding: 10px;
-      background: #ffffff;
+      height: 22vh; padding: 10px; background: #ffffff;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      box-sizing: border-box;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; box-sizing: border-box;
     }
     .select-group {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      max-width: 900px;
+      display: flex; gap: 12px; flex-wrap: wrap;
+      justify-content: center; align-items: center; max-width: 900px;
     }
-    .select-box {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .select-box { display: flex; align-items: center; gap: 6px; }
     label { font-size: 13px; font-weight: bold; color: #2d3748; }
     select {
-      padding: 6px 10px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #cbd5e0;
-      background-color: #fff;
-      max-width: 320px;
+      padding: 6px 10px; font-size: 14px; border-radius: 6px;
+      border: 1px solid #cbd5e0; background-color: #fff; max-width: 320px;
     }
     .btn-nav {
-      padding: 9px 28px;
-      font-size: 15px;
-      font-weight: bold;
-      color: white;
-      background-color: #1a365d;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      padding: 9px 28px; font-size: 15px; font-weight: bold;
+      color: white; background-color: #1a365d; border: none; border-radius: 6px; cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-<!-- 1. パスワード入力画面 -->
+<!-- 🔑 パスワード画面 -->
 <div id="pass-screen">
   <div class="login-box">
     <h2>名城大学附属高校<br>校内ナビゲーション</h2>
@@ -143,7 +84,7 @@ HTML
   </div>
 </div>
 
-<!-- 2. ナビゲーション画面（初期状態は隠す） -->
+<!-- 🗺️ ナビ画面 -->
 <div id="app-screen">
   <div id="map"></div>
   <div class="control-panel">
@@ -162,12 +103,14 @@ HTML
 </div>
 
 <script>
-  // 🔑 設定したいパスワード（自由に変更可能）
+  // パスワード設定（必要に応じて変更してください）
   const CORRECT_PASSWORD = "meijo2026";
 
   let map = null;
+  let activeLine = null;
+  let markersGroup = null;
 
-  // パスワードチェック処理
+  // パスワード判定
   function checkPassword() {
     const input = document.getElementById('passInput').value;
     const errorMsg = document.getElementById('errorMsg');
@@ -175,18 +118,147 @@ HTML
     if (input === CORRECT_PASSWORD) {
       document.getElementById('pass-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
-      initMap(); // マップを起動
+      initMap();
     } else {
       errorMsg.style.display = 'block';
     }
   }
 
-  // エンターキーでも送信できるように設定
   document.getElementById('passInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') checkPassword();
   });
 
-  // マップの初期化
+  // 全教室の精密座標リスト [Y, X]
+  const spots = {
+    // === 1号館 1F ===
+    "1f_office":   { name: "1号館 1F 事務室",       pos: [205, 335] },
+    "1f_principal":{ name: "1号館 1F 校長室",       pos: [205, 290] },
+    "1f_print":    { name: "1号館 1F 印刷室",       pos: [205, 270] },
+    "1f_recep":    { name: "1号館 1F 応接1",        pos: [205, 255] },
+    "1f_out_office":{ name: "1号館 1F 渉外室",      pos: [205, 215] },
+    "1f_health":   { name: "1号館 1F 保健室",       pos: [85, 260] },
+    "1f_counsel":  { name: "1号館 1F 相談室",       pos: [40, 260] },
+    "1f_3s1":      { name: "1号館 1F 3S1教室",      pos: [160, 205] },
+    "1f_3s2":      { name: "1号館 1F 3S2教室",      pos: [120, 205] },
+    "1f_3s3":      { name: "1号館 1F 3S3教室",      pos: [80, 205] },
+    "1f_3s4":      { name: "1号館 1F 3S4教室",      pos: [40, 205] },
+
+    // === 1号館 2F ===
+    "2f_2a1":      { name: "1号館 2F 2A1教室",      pos: [395, 205] },
+    "2f_3a1":      { name: "1号館 2F 3A1教室",      pos: [395, 260] },
+    "2f_3a12":     { name: "1号館 2F 3A12教室",     pos: [395, 305] },
+    "2f_3a13":     { name: "1号館 2F 3A13教室",     pos: [395, 330] },
+    "2f_3a14":     { name: "1号館 2F 3A14教室",     pos: [395, 355] },
+    "2f_3a15":     { name: "1号館 2F 3A15教室",     pos: [290, 355] },
+    "2f_3a16":     { name: "1号館 2F 3A16教室",     pos: [290, 330] },
+    "2f_3a7":      { name: "1号館 2F 3A7教室",      pos: [335, 205] },
+    "2f_3a8":      { name: "1号館 2F 3A8教室",      pos: [295, 205] },
+    "2f_3a9":      { name: "1号館 2F 3A9教室",      pos: [255, 205] },
+    "2f_3a10":     { name: "1号館 2F 3A10教室",     pos: [215, 205] },
+    "2f_student":  { name: "1号館 2F 生徒指導室",   pos: [250, 260] },
+
+    // === 1号館 3F ===
+    "3f_3a2":      { name: "1号館 3F 3A2教室",      pos: [610, 205] },
+    "3f_3a3":      { name: "1号館 3F 3A3教室",      pos: [550, 205] },
+    "3f_3a4":      { name: "1号館 3F 3A4教室",      pos: [470, 205] },
+    "3f_3a5":      { name: "1号館 3F 3A5教室",      pos: [415, 205] },
+    "3f_3a6":      { name: "1号館 3F 3A6教室",      pos: [375, 205] },
+    "3f_2s4":      { name: "1号館 3F 2S4教室",      pos: [610, 280] },
+    "3f_2s3":      { name: "1号館 3F 2S3教室",      pos: [610, 305] },
+    "3f_2s2":      { name: "1号館 3F 2S2教室",      pos: [415, 280] },
+    "3f_2s1":      { name: "1号館 3F 2S1教室",      pos: [375, 280] },
+    "3f_math_jp":  { name: "1号館 3F 数学科/国語科", pos: [470, 260] },
+
+    // === 1号館 4F ===
+    "4f_2a2":      { name: "1号館 4F 2A2教室",      pos: [815, 205] },
+    "4f_2a3":      { name: "1号館 4F 2A3教室",      pos: [775, 205] },
+    "4f_2a4":      { name: "1号館 4F 2A4教室",      pos: [720, 205] },
+    "4f_2a5":      { name: "1号館 4F 2A5教室",      pos: [665, 205] },
+    "4f_2a6":      { name: "1号館 4F 2A6教室",      pos: [625, 205] },
+    "4f_2a7":      { name: "1号館 4F 2A7教室",      pos: [815, 260] },
+    "4f_2a8":      { name: "1号館 4F 2A8教室",      pos: [665, 260] },
+    "4f_2a9":      { name: "1号館 4F 2A9教室",      pos: [625, 260] },
+    "4f_student":  { name: "1号館 4F 生徒会/顧問室", pos: [765, 260] },
+
+    // === 1号館 5F ===
+    "5f_3a11":     { name: "1号館 5F 3A11教室",     pos: [395, 115] },
+    "5f_2a10":     { name: "1号館 5F 2A10教室",     pos: [335, 115] },
+    "5f_geo":      { name: "1号館 5F 地歴科/公民科", pos: [275, 115] },
+    "5f_1_16":     { name: "1号館 5F 1-16教室",     pos: [215, 115] },
+    "5f_1_15":     { name: "1号館 5F 1-15教室",     pos: [155, 115] },
+    "5f_1_10":     { name: "1号館 5F 1-10教室",     pos: [395, 170] },
+    "5f_1_11":     { name: "1号館 5F 1-11教室",     pos: [335, 170] },
+    "5f_1_12":     { name: "1号館 5F 1-12教室",     pos: [275, 170] },
+    "5f_1_13":     { name: "1号館 5F 1-13教室",     pos: [215, 170] },
+    "5f_1_14":     { name: "1号館 5F 1-14教室",     pos: [155, 170] },
+
+    // === 1号館 6F ===
+    "6f_1_1":      { name: "1号館 6F 1-1教室",      pos: [610, 115] },
+    "6f_1_2":      { name: "1号館 6F 1-2教室",      pos: [530, 115] },
+    "6f_1_3":      { name: "1号館 6F 1-3教室",      pos: [470, 115] },
+    "6f_1_4":      { name: "1号館 6F 1-4教室",      pos: [415, 115] },
+    "6f_selectA":  { name: "1号館 6F 選択A教室",    pos: [355, 115] },
+    "6f_1_9":      { name: "1号館 6F 1-9教室",      pos: [610, 170] },
+    "6f_1_8":      { name: "1号館 6F 1-8教室",      pos: [530, 170] },
+    "6f_1_7":      { name: "1号館 6F 1-7教室",      pos: [470, 170] },
+    "6f_1_6":      { name: "1号館 6F 1-6教室",      pos: [415, 170] },
+    "6f_1_5":      { name: "1号館 6F 1-5教室",      pos: [355, 170] },
+
+    // === 1号館 7F ===
+    "7f_staff":    { name: "1号館 7F 職員室",       pos: [675, 140] },
+    "7f_2a14":     { name: "1号館 7F 2A14教室",     pos: [505, 115] },
+    "7f_2a13":     { name: "1号館 7F 2A13教室",     pos: [445, 115] },
+    "7f_2a12":     { name: "1号館 7F 2A12教室",     pos: [505, 170] },
+    "7f_2a11":     { name: "1号館 7F 2A11教室",     pos: [445, 170] },
+
+    // === 1号館 8F ===
+    "8f_ict2":     { name: "1号館 8F ICTルーム2",   pos: [885, 115] },
+    "8f_eng_ssh":  { name: "1号館 8F 英語科/SSH",   pos: [825, 115] },
+    "8f_info_proc":{ name: "1号館 8F 情報処理室",   pos: [740, 115] },
+    "8f_assembly": { name: "1号館 8F 大会議室",     pos: [800, 170] },
+    "8f_broad":    { name: "1号館 8F 放送室",       pos: [720, 170] },
+
+    // === 2号館 ===
+    "2g_2f_career": { name: "2号館 2F 進路指導室",  pos: [365, 545] },
+    "2g_2f_browse": { name: "2号館 2F 閲覧室",      pos: [365, 490] },
+    "2g_2f_locker": { name: "2号館 2F 更衣室A/B",   pos: [365, 440] },
+    "2g_3f_physics":{ name: "2号館 3F 物理室",      pos: [475, 490] },
+    "2g_3f_al":     { name: "2号館 3F ALルーム",    pos: [475, 555] },
+    "2g_3f_bio":    { name: "2号館 3F 生物室",      pos: [610, 345] },
+    "2g_3f_chem":   { name: "2号館 3F 化学室",      pos: [505, 345] },
+    "2g_3f_ict1":   { name: "2号館 3F ICTルーム1",  pos: [550, 355] },
+    "2g_4f_store":  { name: "2号館 4F 購買",        pos: [735, 495] },
+    "2g_4f_music":  { name: "2号館 4F 音楽室",      pos: [705, 555] },
+
+    // === 3号館 ===
+    "3g_1f_measure":{ name: "3号館 1F 計測実験室",  pos: [875, 680] },
+    "3g_1f_mat":    { name: "3号館 1F 材料実験室",  pos: [825, 680] },
+    "3g_1f_weld":   { name: "3号館 1F 溶接実習室",  pos: [760, 680] },
+    "3g_1f_elec":   { name: "3号館 1F 電気機器実習室",pos: [675, 680] },
+    "3g_2f_avl":    { name: "3号館 2F 視聴覚室(AVL)",pos: [875, 755] },
+    "3g_2f_study":  { name: "3号館 2F 学習ルーム",  pos: [760, 755] },
+    "3g_3f_draft":  { name: "3号館 3F 製図室",      pos: [875, 815] },
+    "3g_3f_ctrl1":  { name: "3号館 3F 電気系制御1", pos: [780, 815] },
+    "3g_3f_ctrl2":  { name: "3号館 3F 電気系制御2", pos: [735, 815] },
+    "3g_4f_special":{ name: "3号館 4F 特別教室",    pos: [875, 875] },
+    "3g_4f_light":  { name: "3号館 4F 照明実習室",  pos: [825, 875] },
+
+    // === 4号館 ===
+    "4g_1f_library":{ name: "4号館 1F 図書館",      pos: [100, 500] },
+    "4g_1f_mach1":  { name: "4号館 1F 機械加工室1", pos: [225, 675] },
+    "4g_1f_mach2":  { name: "4号館 1F 機械加工室2", pos: [160, 675] },
+    "4g_1f_cam":    { name: "4号館 1F CAM実習室",   pos: [300, 675] },
+    "4g_2f_art":    { name: "4号館 2F 美術室",      pos: [275, 740] },
+    "4g_2f_lan":    { name: "4号館 2F 電気系LAN教室",pos: [335, 740] },
+    "4g_2f_broad":  { name: "4号館 2F 放送室",      pos: [385, 740] },
+    "4g_3f_cad1":   { name: "4号館 3F CAD室1",      pos: [385, 810] },
+    "4g_3f_cad2":   { name: "4号館 3F CAD室2",      pos: [335, 810] },
+    "4g_3f_shodo":  { name: "4号館 3F 書道室",      pos: [275, 810] },
+    "4g_4f_pc3":    { name: "4号館 4F パソコン教室3",pos: [380, 880] },
+    "4g_4f_pc4":    { name: "4号館 4F パソコン教室4",pos: [315, 880] },
+    "4g_4f_multi":  { name: "4号館 4F 多目的室",    pos: [220, 880] }
+  };
+
   function initMap() {
     if (map) return;
 
@@ -203,29 +275,10 @@ HTML
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
     map.fitBounds(bounds);
 
-    const spots = {
-      // === 1号館 ===
-      "1f_office":   { name: "1号館 1F 事務室",       pos: [205, 335] },
-      "1f_principal":{ name: "1号館 1F 校長室",       pos: [205, 290] },
-      "1f_health":   { name: "1号館 1F 保健室",       pos: [85, 260] },
-      "2f_2a1":      { name: "1号館 2F 2A1教室",      pos: [395, 205] },
-      "2f_3a1":      { name: "1号館 2F 3A1教室",      pos: [395, 260] },
-      "3f_3a2":      { name: "1号館 3F 3A2教室",      pos: [610, 205] },
-      "4f_2a2":      { name: "1号館 4F 2A2教室",      pos: [815, 205] },
-      "7f_staff":    { name: "1号館 7F 職員室",       pos: [675, 140] },
-      "8f_ict2":     { name: "1号館 8F ICTルーム2",   pos: [885, 115] },
-
-      // === 2号館 / 3号館 / 4号館 ===
-      "2g_4f_store":  { name: "2号館 4F 購買",        pos: [735, 495] },
-      "3g_2f_avl":    { name: "3号館 2F 視聴覚室(AVL)",pos: [875, 755] },
-      "4g_1f_library":{ name: "4号館 1F 図書館",      pos: [100, 500] },
-      "4g_3f_cad1":   { name: "4号館 3F CAD室1",      pos: [385, 810] },
-      "4g_4f_pc3":    { name: "4号館 4F パソコン教室3",pos: [380, 880] }
-    };
-
     const startSelect = document.getElementById('startSelect');
     const endSelect = document.getElementById('endSelect');
 
+    // 全ピンの読み込み＆ドロップダウン作成
     Object.keys(spots).forEach(key => {
       const spot = spots[key];
       
@@ -239,16 +292,14 @@ HTML
       optEnd.textContent = spot.name;
       endSelect.appendChild(optEnd);
 
+      // ピンの生成＆吹き出し（Popup）の設定
       L.marker(spot.pos).addTo(map).bindPopup(`<b>${spot.name}</b>`);
     });
 
+    // 初期値（2A1 -> 3A1）
     startSelect.value = "2f_2a1";
     endSelect.value = "2f_3a1";
-
-    window.spotsData = spots;
   }
-
-  let activeLine = null;
 
   function showRoute() {
     const startKey = document.getElementById('startSelect').value;
@@ -261,9 +312,10 @@ HTML
 
     if (activeLine) map.removeLayer(activeLine);
 
-    const startPos = window.spotsData[startKey].pos;
-    const endPos = window.spotsData[endKey].pos;
+    const startPos = spots[startKey].pos;
+    const endPos = spots[endKey].pos;
 
+    // 赤い破線で案内ラインを引く
     activeLine = L.polyline([startPos, endPos], {
       color: '#e53e3e',
       weight: 6,
@@ -271,6 +323,7 @@ HTML
       opacity: 0.9
     }).addTo(map);
 
+    // ルート全体が画面に収まるようにズーム＆移動
     map.fitBounds(activeLine.getBounds(), { padding: [60, 60] });
   }
 </script>
