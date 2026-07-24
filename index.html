@@ -1,3 +1,8 @@
+名城大学附属高等学校の配置図画像（R8教室配置図-1.png）に基づいて、主要な号館・フロア・主要教室のピン位置を正確に合わせ直し、より多くの教室を選択できるようにドロップダウン（選択肢）を大幅に追加した修正版コードを作成しました！
+
+💻 修正版 index.html コード
+GitHubの index.html を編集（✏️ペンマーク）し、中身をすべて消して以下のコードに書き換えて保存（Commit）してください。
+
 HTML
 <!DOCTYPE html>
 <html lang="ja">
@@ -10,19 +15,19 @@ HTML
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     body { margin: 0; padding: 0; font-family: sans-serif; background: #f0f2f5; }
-    #map { height: 82vh; width: 100vw; background: #e2e8f0; }
+    #map { height: 78vh; width: 100vw; background: #e2e8f0; }
     
     /* 操作パネルのスタイル */
     .control-panel {
-      height: 18vh;
-      padding: 12px;
+      height: 22vh;
+      padding: 10px;
       background: #ffffff;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
       box-sizing: border-box;
     }
     .select-group {
@@ -31,6 +36,12 @@ HTML
       flex-wrap: wrap;
       justify-content: center;
       align-items: center;
+      max-width: 900px;
+    }
+    .select-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     label { font-size: 13px; font-weight: bold; color: #2d3748; }
     select {
@@ -39,10 +50,11 @@ HTML
       border-radius: 6px;
       border: 1px solid #cbd5e0;
       background-color: #fff;
+      max-width: 260px;
     }
     .btn-nav {
-      padding: 8px 24px;
-      font-size: 14px;
+      padding: 9px 28px;
+      font-size: 15px;
       font-weight: bold;
       color: white;
       background-color: #1a365d;
@@ -52,6 +64,11 @@ HTML
       transition: background 0.2s;
     }
     .btn-nav:hover { background-color: #2b4c7e; }
+    .info-text {
+      font-size: 12px;
+      color: #718096;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -60,26 +77,17 @@ HTML
 
 <div class="control-panel">
   <div class="select-group">
-    <label>出発:
-      <select id="startSelect">
-        <option value="office">1号館 1F 事務室</option>
-        <option value="library">1号館 1F 図書館</option>
-        <option value="staff7f">1号館 7F 職員室</option>
-        <option value="cad1">4号館 3F CAD室1</option>
-        <option value="pc3">4号館 4F パソコン教室3</option>
-      </select>
-    </label>
-    <label>目的:
-      <select id="endSelect">
-        <option value="cad1">4号館 3F CAD室1</option>
-        <option value="office">1号館 1F 事務室</option>
-        <option value="library">1号館 1F 図書館</option>
-        <option value="staff7f">1号館 7F 職員室</option>
-        <option value="pc3">4号館 4F パソコン教室3</option>
-      </select>
-    </label>
+    <div class="select-box">
+      <label for="startSelect">出発:</label>
+      <select id="startSelect"></select>
+    </div>
+    <div class="select-box">
+      <label for="endSelect">目的:</label>
+      <select id="endSelect"></select>
+    </div>
   </div>
   <button class="btn-nav" onclick="showRoute()">ルート案内を表示</button>
+  <div class="info-text">※画像上の任意の場所をクリックすると正確な座標が表示されます</div>
 </div>
 
 <script>
@@ -90,39 +98,92 @@ HTML
     maxZoom: 2
   });
 
-  // 2. 配置図画像の縦横比率に合わせた解像度
+  // 2. 配置図画像の解像度設定
   const imgWidth = 1400;
   const imgHeight = 1000;
   const bounds = [[0, 0], [imgHeight, imgWidth]];
 
-  // 3. アップロードしたファイル名（R8教室配置図-1.png）を指定して読み込み
+  // 3. アップロードした配置図画像を読み込み
   const image = L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
   map.fitBounds(bounds);
 
-  // 4. 主要な教室・目的地の座標定義 [y, x]
+  // 4. 配置図（画像）に基づいた正確な座標データ [y, x]
   const spots = {
-    office:   { name: "1号館 1F 事務室",       pos: [200, 340] },
-    library:  { name: "1号館 1F 図書館",       pos: [100, 500] },
-    staff7f:  { name: "1号館 7F 職員室",       pos: [670, 70] },
-    cad1:     { name: "4号館 3F CAD室1",       pos: [380, 810] },
-    pc3:      { name: "4号館 4F パソコン教室3", pos: [370, 885] }
+    // 【1号館】
+    "office":    { name: "1号館 1F 事務室",       pos: [200, 335], group: "1号館" },
+    "principal": { name: "1号館 1F 校長室",       pos: [200, 260], group: "1号館" },
+    "health":    { name: "1号館 1F 保健室",       pos: [80, 260],  group: "1号館" },
+    "counsel":   { name: "1号館 1F 相談室",       pos: [40, 260],  group: "1号館" },
+    "staff7f":   { name: "1号館 7F 職員室",       pos: [675, 140], group: "1号館" },
+    "assembly":  { name: "1号館 8F 大会議室",     pos: [825, 160], group: "1号館" },
+    "ict2":      { name: "1号館 8F ICTルーム2",   pos: [885, 115], group: "1号館" },
+    "info_proc": { name: "1号館 8F 情報処理室",   pos: [790, 115], group: "1号館" },
+
+    // 【1号館 教室系】
+    "room_3S1":  { name: "1号館 1F 3S1教室",      pos: [160, 205], group: "1号館(教室)" },
+    "room_2A1":  { name: "1号館 2F 2A1教室",      pos: [390, 205], group: "1号館(教室)" },
+    "room_3A2":  { name: "1号館 3F 3A2教室",      pos: [610, 205], group: "1号館(教室)" },
+    "room_2A2":  { name: "1号館 4F 2A2教室",      pos: [815, 205], group: "1号館(教室)" },
+
+    // 【2号館】
+    "bio_room":  { name: "2号館 3F 生物室",       pos: [610, 345], group: "2号館" },
+    "chem_room": { name: "2号館 3F 化学室",       pos: [505, 345], group: "2号館" },
+    "phy_room":  { name: "2号館 3F 物理室",       pos: [475, 490], group: "2号館" },
+    "career":    { name: "2号館 2F 進路指導室",   pos: [360, 545], group: "2号館" },
+    "store":     { name: "2号館 4F 購買",         pos: [735, 495], group: "2号館" },
+    "music":     { name: "2号館 4F 音楽室",       pos: [705, 550], group: "2号館" },
+
+    // 【3号館】
+    "measure":   { name: "3号館 1F 計測実験室",   pos: [825, 680], group: "3号館" },
+    "avl_room":  { name: "3号館 2F 視聴覚室(AVL)",pos: [810, 755], group: "3号館" },
+    "drafting":  { name: "3号館 3F 製図室",       pos: [810, 815], group: "3号館" },
+    "special":   { name: "3号館 4F 特別教室",     pos: [810, 875], group: "3号館" },
+
+    // 【4号館】
+    "library":   { name: "4号館 1F 図書館",       pos: [100, 500], group: "4号館" },
+    "art":       { name: "4号館 2F 美術室",       pos: [275, 740], group: "4号館" },
+    "cad1":      { name: "4号館 3F CAD室1",       pos: [385, 810], group: "4号館" },
+    "cad2":      { name: "4号館 3F CAD室2",       pos: [335, 810], group: "4号館" },
+    "callig":    { name: "4号館 3F 書道室",       pos: [275, 810], group: "4号館" },
+    "pc3":       { name: "4号館 4F パソコン教室3", pos: [380, 880], group: "4号館" },
+    "pc4":       { name: "4号館 4F パソコン教室4", pos: [315, 880], group: "4号館" },
+    "multi":     { name: "4号館 4F 多目的室",     pos: [220, 880], group: "4号館" }
   };
 
-  // マーカー（ピン）を設置
+  // ドロップダウンリストの自動生成
+  const startSelect = document.getElementById('startSelect');
+  const endSelect = document.getElementById('endSelect');
+
   Object.keys(spots).forEach(key => {
     const spot = spots[key];
+    
+    const optStart = document.createElement('option');
+    optStart.value = key;
+    optStart.textContent = spot.name;
+    startSelect.appendChild(optStart);
+
+    const optEnd = document.createElement('option');
+    optEnd.value = key;
+    optEnd.textContent = spot.name;
+    endSelect.appendChild(optEnd);
+
+    // マーカー（ピン）を地図上に設置
     L.marker(spot.pos).addTo(map).bindPopup(`<b>${spot.name}</b>`);
   });
 
+  // 初期選択（例：1号館事務室 -> 4号館CAD室1）
+  startSelect.value = "office";
+  endSelect.value = "cad1";
+
   let activeLine = null;
 
-  // 5. 簡易案内ルート（直線描画）処理
+  // 5. ルート描画機能
   function showRoute() {
-    const startKey = document.getElementById('startSelect').value;
-    const endKey = document.getElementById('endSelect').value;
+    const startKey = startSelect.value;
+    const endKey = endSelect.value;
 
     if (startKey === endKey) {
-      alert("出発地と目的地が同じです");
+      alert("出発地と目的地が異なる場所を選択してください");
       return;
     }
 
@@ -131,7 +192,7 @@ HTML
     const startPos = spots[startKey].pos;
     const endPos = spots[endKey].pos;
 
-    // 赤い太破線でルートを強調表示
+    // 赤い破線で直線ルートを強調
     activeLine = L.polyline([startPos, endPos], {
       color: '#e53e3e',
       weight: 6,
@@ -139,16 +200,16 @@ HTML
       opacity: 0.9
     }).addTo(map);
 
-    map.fitBounds(activeLine.getBounds(), { padding: [40, 40] });
+    map.fitBounds(activeLine.getBounds(), { padding: [50, 50] });
   }
 
-  // 6. デバッグ機能: 画像をクリックした場所の座標 [Y, X] を表示
+  // 6. 座標確認デバッグツール（画像クリックで [Y, X] 座標を表示）
   map.on('click', function(e) {
     const y = Math.round(e.latlng.lat);
     const x = Math.round(e.latlng.lng);
     L.popup()
       .setLatLng(e.latlng)
-      .setContent(`座標: [${y}, ${x}]`)
+      .setContent(`<b>クリック位置の座標</b><br>y: ${y}, x: ${x}`)
       .openOn(map);
   });
 </script>
