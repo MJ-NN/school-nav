@@ -21,7 +21,7 @@ HTML
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #f8fafc;
+      background-color: #cbd5e1;
     }
 
     /* 認証画面 */
@@ -212,10 +212,10 @@ HTML
     let animMarker = null;
     let animTimer = null;
 
-    // 全体画像のBounds (画像の実際のピクセル比率/範囲に指定)
-    const imageBounds = [[-700, 0], [0, 1000]];
+    // 全体画像のBounds (画像の絶対範囲)
+    const imageBounds = [[-1000, 0], [0, 1000]];
 
-    // 階数ごとの表示領域 (表示されない場合は全体を表示するように調整可能)
+    // 階数ごとの表示領域
     const floorViewBounds = {
       1: [[-700, 200], [-500, 450]],
       2: [[-550, 200], [-380, 450]],
@@ -262,7 +262,7 @@ HTML
           document.getElementById('pass-screen').style.display = 'none';
           document.getElementById('app-screen').style.display = 'block';
           
-          // 画面表示後にマップサイズを正しく再読み込み
+          // アプリ画面が表示されてから確実にマップを描画
           initMap();
         }, 300);
       } else {
@@ -275,19 +275,20 @@ HTML
     });
 
     function initMap() {
-      if (map) return; // 二重初期化防止
+      if (map) return;
 
+      // Leafletマップ作成
       map = L.map('map', {
         crs: L.CRS.Simple,
-        minZoom: -2,
-        maxZoom: 2,
+        minZoom: -3,
+        maxZoom: 3,
         zoomControl: false
       });
 
-      // 配置図画像をレイヤーに追加
-      const overlay = L.imageOverlay('R8教室配置図-1.png', imageBounds).addTo(map);
+      // 画像レイヤーを追加
+      const imgOverlay = L.imageOverlay('R8教室配置図-1.png', imageBounds).addTo(map);
 
-      // プルダウン作成
+      // プルダウンの作成
       const startSelect = document.getElementById('startSelect');
       const endSelect = document.getElementById('endSelect');
 
@@ -300,17 +301,17 @@ HTML
       startSelect.value = "1g_1f_3s4";
       endSelect.value = "1g_4f_2a2";
 
-      // 画像の読み込み完了を待って全体または1階を表示
-      overlay.on('load', function() {
-        map.invalidateSize();
-        switchFloor(1);
-      });
-
-      // フォールバック（画像イベントが発火しなかった場合用）
-      setTimeout(() => {
+      // 画像が読み込まれてから画面全体をフィット
+      imgOverlay.on('load', function() {
         map.invalidateSize();
         map.fitBounds(imageBounds);
-      }, 500);
+      });
+
+      // 強制的に初期サイズと表示範囲を確定
+      setTimeout(() => {
+        map.invalidateSize();
+        switchFloor(1);
+      }, 200);
     }
 
     // タブ切り替え処理
