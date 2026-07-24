@@ -34,31 +34,32 @@ HTML
     .error-msg { color: #e53e3e; font-size: 12px; margin-top: 10px; display: none; }
 
     #app-screen { display: none; }
-    #map { height: 75vh; width: 100vw; background: #e2e8f0; }
+    #map { height: 70vh; width: 100vw; background: #e2e8f0; cursor: crosshair; }
     
     .control-panel {
-      height: 25vh; padding: 10px; background: #ffffff;
+      height: 30vh; padding: 10px; background: #ffffff;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 8px; box-sizing: border-box;
+      gap: 10px; box-sizing: border-box;
+    }
+    .edit-panel {
+      background: #edf2f7; padding: 8px 12px; border-radius: 6px;
+      display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold;
     }
     .select-group {
-      display: flex; gap: 12px; flex-wrap: wrap;
-      justify-content: center; align-items: center; max-width: 900px;
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center;
     }
-    .select-box { display: flex; align-items: center; gap: 6px; }
-    label { font-size: 13px; font-weight: bold; color: #2d3748; }
     select {
       padding: 6px 10px; font-size: 14px; border-radius: 6px;
-      border: 1px solid #cbd5e0; background-color: #fff; max-width: 320px;
+      border: 1px solid #cbd5e0; background-color: #fff;
     }
     .btn-nav {
-      padding: 8px 24px; font-size: 14px; font-weight: bold;
+      padding: 8px 20px; font-size: 14px; font-weight: bold;
       color: white; background-color: #1a365d; border: none; border-radius: 6px; cursor: pointer;
     }
     .btn-copy {
-      padding: 6px 16px; font-size: 12px; font-weight: bold;
-      color: white; background-color: #2b6cb0; border: none; border-radius: 4px; cursor: pointer;
+      padding: 8px 20px; font-size: 14px; font-weight: bold;
+      color: white; background-color: #2b6cb0; border: none; border-radius: 6px; cursor: pointer;
     }
   </style>
 </head>
@@ -77,33 +78,43 @@ HTML
 <div id="app-screen">
   <div id="map"></div>
   <div class="control-panel">
-    <div class="select-group">
-      <div class="select-box">
-        <label for="startSelect">出発:</label>
-        <select id="startSelect"></select>
-      </div>
-      <div class="select-box">
-        <label for="endSelect">目的:</label>
-        <select id="endSelect"></select>
-      </div>
+    <div class="edit-panel">
+      📍 調整したい教室: 
+      <select id="targetSelect" onchange="updateTarget()"></select>
+      <span style="color: #e53e3e; font-size: 11px;">(選んだ状態でマップをクリックするとピンが移動します)</span>
     </div>
+
+    <div class="select-group">
+      <div>出発: <select id="startSelect"></select></div>
+      <div>目的: <select id="endSelect"></select></div>
+    </div>
+
     <div style="display: flex; gap: 10px;">
-      <button class="btn-nav" onclick="showRoute()">ルート案内を表示</button>
-      <button class="btn-copy" onclick="outputCoords()">現在のピン位置を全コピー</button>
+      <button class="btn-nav" onclick="showRoute()">ルート表示</button>
+      <button class="btn-copy" onclick="outputCoords()">座標データをすべてコピー</button>
     </div>
   </div>
 </div>
 
 <script>
   const CORRECT_PASSWORD = "meijo2026";
-
   let map = null;
   let activeLine = null;
-  const markerObjects = {};
+  let currentTargetKey = "4f_2a2";
+
+  // 全スポットリスト
+  const spots = {
+    "4f_2a2": { name: "1号館 4F 2A2", pos: [-100, 300] },
+    "2f_3a1": { name: "1号館 2F 3A1", pos: [-400, 380] },
+    "2f_2a1": { name: "1号館 2F 2A1", pos: [-400, 300] },
+    "6f_1_1": { name: "1号館 6F 1-1", pos: [-200, 200] },
+    "8f_ict2":{ name: "1号館 8F ICT2", pos: [-50, 150] }
+  };
+
+  const markers = {};
 
   function checkPassword() {
-    const input = document.getElementById('passInput').value;
-    if (input === CORRECT_PASSWORD) {
+    if (document.getElementById('passInput').value === CORRECT_PASSWORD) {
       document.getElementById('pass-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
       initMap();
@@ -112,23 +123,10 @@ HTML
     }
   }
 
-  document.getElementById('passInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') checkPassword();
-  });
-
-  // 初期スポットデータ
-  const spots = {
-    "2f_2a1": { name: "1号館 2F 2A1教室", pos: [-400, 300] },
-    "2f_3a1": { name: "1号館 2F 3A1教室", pos: [-400, 380] },
-    "4f_2a2": { name: "1号館 4F 2A2教室", pos: [-100, 300] }
-  };
-
   function initMap() {
     if (map) return;
 
-    // 1000px × 700px のアスペクト比を固定
-    const w = 1000, h = 700;
-    const bounds = [[-h, 0], [0, w]];
+    const bounds = [[-700, 0], [0, 1000]];
 
     map = L.map('map', {
       crs: L.CRS.Simple,
@@ -140,65 +138,59 @@ HTML
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
     map.fitBounds(bounds);
 
+    const targetSelect = document.getElementById('targetSelect');
     const startSelect = document.getElementById('startSelect');
     const endSelect = document.getElementById('endSelect');
 
     Object.keys(spots).forEach(key => {
       const spot = spots[key];
 
-      const optStart = document.createElement('option');
-      optStart.value = key; optStart.textContent = spot.name;
-      startSelect.appendChild(optStart);
+      // セレクトボックスの生成
+      targetSelect.appendChild(new Option(spot.name, key));
+      startSelect.appendChild(new Option(spot.name, key));
+      endSelect.appendChild(new Option(spot.name, key));
 
-      const optEnd = document.createElement('option');
-      optEnd.value = key; optEnd.textContent = spot.name;
-      endSelect.appendChild(optEnd);
+      // マーカーの作成（クリックを透過させてマップ操作を優先）
+      const marker = L.marker(spot.pos, { interactive: false }).addTo(map);
+      markers[key] = marker;
+    });
 
-      // 💡 ドラッグ可能（draggable: true）に設定
-      const marker = L.marker(spot.pos, { draggable: true }).addTo(map);
-      marker.bindPopup(`<b>${spot.name}</b><br>ドラッグして位置調整可`);
+    // 💡 マップをクリックした場所にピンを瞬時に移動させる
+    map.on('click', function(e) {
+      const lat = Math.round(e.latlng.lat);
+      const lng = Math.round(e.latlng.lng);
       
-      marker.on('dragend', function(e) {
-        const latlng = e.target.getLatLng();
-        spot.pos = [Math.round(latlng.lat), Math.round(latlng.lng)];
-      });
-
-      markerObjects[key] = marker;
+      spots[currentTargetKey].pos = [lat, lng];
+      markers[currentTargetKey].setLatLng([lat, lng]);
     });
 
     startSelect.value = "4f_2a2";
     endSelect.value = "2f_3a1";
   }
 
+  function updateTarget() {
+    currentTargetKey = document.getElementById('targetSelect').value;
+  }
+
   function showRoute() {
     const startKey = document.getElementById('startSelect').value;
     const endKey = document.getElementById('endSelect').value;
 
-    if (startKey === endKey) {
-      alert("出発地と目的地が異なる場所を選択してください");
-      return;
-    }
+    if (startKey === endKey) return alert("違う教室を選んでください");
 
     if (activeLine) map.removeLayer(activeLine);
 
-    const startPos = spots[startKey].pos;
-    const endPos = spots[endKey].pos;
-
-    activeLine = L.polyline([startPos, endPos], {
+    activeLine = L.polyline([spots[startKey].pos, spots[endKey].pos], {
       color: '#e53e3e', weight: 6, dashArray: '8, 8', opacity: 0.9
     }).addTo(map);
-
-    map.fitBounds(activeLine.getBounds(), { padding: [50, 50] });
   }
 
-  // 💡 調整した位置データをクリップボードに一括コピーする機能
   function outputCoords() {
-    const code = JSON.stringify(spots, null, 2);
-    navigator.clipboard.writeText(code).then(() => {
-      alert("現在の正確なピンの位置データをクリップボードにコピーしました！");
+    const jsonStr = JSON.stringify(spots, null, 2);
+    navigator.clipboard.writeText(jsonStr).then(() => {
+      alert("最新の位置座標をクリップボードにコピーしました！");
     }).catch(() => {
-      console.log(code);
-      alert("コンソールに座標を出力しました。");
+      alert("コピーに失敗しました。画面の変更を確認してください。");
     });
   }
 </script>
