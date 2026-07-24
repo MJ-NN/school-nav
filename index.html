@@ -224,31 +224,32 @@ HTML
     "2g_4f_購買":   { name: "2号館 4F 購買",   node: "n_2g_4f_shop" }
   };
 
-  // 🗺️ 2. ノード（実際の画像上の位置座標）
+  // 🗺️ 2. ノード（実際の画像上の位置座標 [Y, X]）
+  // 画像の左下を原点(0,0)、右上を(1000, 1000)として正確にマッピング修正
   const nodes = {
-    // 【1階】
-    "n_1g_1f_office":   { pos: [-580, 500] }, // 事務室
-    "n_1g_1f_corridor": { pos: [-580, 520] }, // 1F 廊下
-    "n_1g_1f_stairs":   { pos: [-580, 580] }, // 1F 階段
-    "n_2g_1f_library":  { pos: [-627, 520] },
+    // 【1階 (1G 1F)】
+    "n_1g_1f_office":   { pos: [175, 275] }, // 1号館 1F 事務室
+    "n_1g_1f_corridor": { pos: [175, 240] }, // 事務室前 廊下
+    "n_1g_1f_stairs":   { pos: [175, 205] }, // 1号館 右側 階段マーク
+    "n_2g_1f_library":  { pos: [85,  450] }, // 2号館 1F 図書館
 
-    // 【2階】
-    "n_1g_2f_3a1":      { pos: [-200, 500] }, // 2F 3A1
-    "n_1g_2f_corridor": { pos: [-200, 520] }, // 2F 廊下
-    "n_1g_2f_stairs":   { pos: [-200, 580] }, // 2F 階段
+    // 【2階 (1G 2F)】
+    "n_1g_2f_3a1":      { pos: [385, 235] }, // 1号館 2F 3A1
+    "n_1g_2f_corridor": { pos: [385, 205] }, // 2F 廊下
+    "n_1g_2f_stairs":   { pos: [385, 205] }, // 2F 階段
 
-    // 【3階】
-    "n_1g_3f_2s1":      { pos: [ -30, 500] }, // 3F 2S1
-    "n_1g_3f_corridor": { pos: [ -30, 520] }, // 3F 廊下
-    "n_1g_3f_stairs":   { pos: [ -30, 580] }, // 3F 階段
+    // 【3階 (1G 3F)】
+    "n_1g_3f_2s1":      { pos: [545, 290] }, // 1号館 3F 2S1
+    "n_1g_3f_corridor": { pos: [545, 205] }, // 3F 廊下
+    "n_1g_3f_stairs":   { pos: [545, 205] }, // 3F 階段
 
-    // 【4階】
-    "n_1g_4f_2a2":      { pos: [-181, 228] },
-    "n_1g_4f_stairs":   { pos: [-181, 580] }, // 4F 階段
-    "n_2g_4f_shop":     { pos: [-191, 499] }
+    // 【4階 (1G 4F & 2G 4F)】
+    "n_1g_4f_2a2":      { pos: [800, 105] }, // 1号館 4F 2A2
+    "n_1g_4f_stairs":   { pos: [800, 205] }, // 4F 階段
+    "n_2g_4f_shop":     { pos: [650, 450] }  // 2号館 4F 購買
   };
 
-  // 🚶 3. ネットワーク接続（修正版）
+  // 🚶 3. ネットワーク接続
   const graph = {
     // --- 1階 ---
     "n_1g_1f_office":   { "n_1g_1f_corridor": 5 },
@@ -281,7 +282,8 @@ HTML
 
   function initMap() {
     if (map) return;
-    const bounds = [[-700, 0], [0, 1000]];
+    // 原点(0,0)を左下、(1000,1000)を右上としてバウンズ設定
+    const bounds = [[0, 0], [1000, 1000]];
     map = L.map('map', { crs: L.CRS.Simple, minZoom: -1.5, maxZoom: 2, maxBounds: bounds, zoomControl: false });
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
     map.fitBounds(bounds);
