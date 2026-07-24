@@ -10,153 +10,74 @@ HTML
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-
-    body, html {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #cbd5e1;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background-color: #cbd5e1; }
 
     /* 認証画面 */
     #pass-screen {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: #0f172a;
-      display: flex; justify-content: center; align-items: center;
-      z-index: 9999;
-      transition: opacity 0.3s ease;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: #0f172a; display: flex; justify-content: center; align-items: center;
+      z-index: 9999; transition: opacity 0.3s;
     }
-
     .pass-card {
-      background: #ffffff;
-      padding: 30px 40px;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      text-align: center;
-      width: 320px;
+      background: #ffffff; padding: 30px 40px; border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; width: 320px;
     }
-
     .pass-card h2 { margin-bottom: 20px; color: #0f172a; font-size: 20px; }
-    .pass-card input[type="password"] {
-      width: 100%; padding: 10px; margin-bottom: 15px;
-      border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; outline: none;
-    }
-
-    .pass-card button {
-      width: 100%; padding: 10px; background-color: #2563eb; color: white;
-      border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
-    }
-
+    .pass-card input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 6px; }
+    .pass-card button { width: 100%; padding: 10px; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
     .error-msg { color: #ef4444; font-size: 14px; margin-top: 10px; display: none; }
 
     /* メインアプリ */
     #app-screen { display: none; width: 100%; height: 100%; position: relative; }
 
-    /* 階数切り替えタブ */
+    /* 階数タブ */
     .floor-tabs {
       position: absolute; top: 15px; right: 15px; z-index: 1000;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 6px; border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-      display: flex; gap: 4px; backdrop-filter: blur(5px);
+      background: rgba(255, 255, 255, 0.95); padding: 6px; border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; gap: 4px;
     }
-
     .floor-tab {
       padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 6px;
       background: white; font-weight: bold; font-size: 13px; cursor: pointer; color: #475569;
-      transition: all 0.2s ease;
     }
+    .floor-tab.active { background: #2563eb; color: white; border-color: #2563eb; }
 
-    .floor-tab.active {
-      background: #2563eb; color: white; border-color: #2563eb;
-    }
-
-    /* サイドコントロールパネル */
+    /* 操作パネル */
     .control-panel {
       position: absolute; top: 15px; left: 15px; z-index: 1000;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 15px 20px; border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-      display: flex; flex-direction: column; gap: 10px;
+      background: rgba(255, 255, 255, 0.95); padding: 15px 20px; border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 10px;
       width: 320px; max-height: calc(100vh - 30px); overflow-y: auto;
-      backdrop-filter: blur(5px);
     }
-
     .select-group { display: flex; flex-direction: column; gap: 4px; }
     .select-group label { font-size: 12px; font-weight: bold; color: #475569; }
-    .select-group select {
-      padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
-      font-size: 14px; outline: none; background-color: #fff;
-    }
+    .select-group select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+    .btn-search { padding: 10px; background-color: #059669; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-    .btn-search {
-      padding: 10px; background-color: #059669; color: white;
-      border: none; border-radius: 6px; font-size: 14px; font-weight: bold;
-      cursor: pointer; transition: background-color 0.2s;
-    }
+    /* ステップナビ */
+    #step-guide { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .step-card { background: #f1f5f9; border-left: 4px solid #2563eb; padding: 10px; border-radius: 4px; font-size: 13px; }
+    .step-btn { margin-top: 6px; padding: 4px 8px; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; }
 
-    .btn-search:hover { background-color: #047857; }
-
-    /* ステップ表示UI */
-    #step-guide {
-      margin-top: 10px; display: flex; flex-direction: column; gap: 8px;
-    }
-
-    .step-card {
-      background: #f1f5f9; border-left: 4px solid #2563eb;
-      padding: 10px; border-radius: 4px; font-size: 13px;
-    }
-
-    .step-card strong { color: #0f172a; display: block; margin-bottom: 2px; }
-    .step-btn {
-      margin-top: 6px; padding: 4px 8px; background: #2563eb; color: white;
-      border: none; border-radius: 4px; font-size: 11px; cursor: pointer;
-    }
-
-    /* マップエリア */
     #map { width: 100%; height: 100%; background-color: #cbd5e1; }
 
-    /* 平面移動用アイコン（青パルス） */
+    /* アニメーションアイコン */
     .animated-pulse-icon {
-      width: 16px; height: 16px; background-color: #2563eb;
-      border: 2px solid white; border-radius: 50%;
-      box-shadow: 0 0 8px rgba(37, 99, 235, 0.8);
-      animation: pulse-animation 1.2s infinite ease-in-out;
+      width: 16px; height: 16px; background-color: #2563eb; border: 2px solid white; border-radius: 50%;
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.8); animation: pulse 1.2s infinite ease-in-out;
     }
-
-    @keyframes pulse-animation {
-      0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
-      70% { transform: scale(1.2); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
-      100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
-    }
-
-    /* エスカレーター移動用アイコン（黄色・雷マーク） */
     .escalator-pulse-icon {
-      width: 24px; height: 24px; background-color: #f59e0b;
-      border: 2px solid white; border-radius: 50%;
-      color: white; font-weight: bold; font-size: 12px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.9);
-      animation: escalator-pulse 0.8s infinite ease-in-out;
+      width: 24px; height: 24px; background-color: #f59e0b; border: 2px solid white; border-radius: 50%;
+      color: white; font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.9); animation: pulse 0.8s infinite ease-in-out;
     }
-
-    @keyframes escalator-pulse {
-      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8); }
-      70% { transform: scale(1.3); box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
-      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-    }
+    @keyframes pulse { 0% { transform: scale(0.8); } 50% { transform: scale(1.2); } 100% { transform: scale(0.8); } }
   </style>
 </head>
 <body>
 
-  <!-- 認証画面 -->
+  <!-- ログイン画面 -->
   <div id="pass-screen">
     <div class="pass-card">
       <h2>校内案内マップ</h2>
@@ -166,10 +87,9 @@ HTML
     </div>
   </div>
 
-  <!-- メインアプリ画面 -->
+  <!-- メイン画面 -->
   <div id="app-screen">
-    <!-- フロアタブUI -->
-    <div class="floor-tabs" id="floorTabs">
+    <div class="floor-tabs">
       <button class="floor-tab active" onclick="switchFloor(1)">1F</button>
       <button class="floor-tab" onclick="switchFloor(2)">2F</button>
       <button class="floor-tab" onclick="switchFloor(3)">3F</button>
@@ -180,54 +100,31 @@ HTML
       <button class="floor-tab" onclick="switchFloor(8)">8F</button>
     </div>
 
-    <!-- コントロールパネル -->
     <div class="control-panel">
       <div class="select-group">
-        <label for="startSelect">🚩 出発地</label>
+        <label>🚩 出発地</label>
         <select id="startSelect"></select>
       </div>
       <div class="select-group">
-        <label for="endSelect">🎯 目的地</label>
+        <label>🎯 目的地</label>
         <select id="endSelect"></select>
       </div>
       <button class="btn-search" onclick="calculateRoute()">ルート案内を開始</button>
-      
-      <!-- ナビゲーション案内カード表示エリア -->
       <div id="step-guide"></div>
     </div>
     
     <div id="map"></div>
   </div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <script>
     const CORRECT_PASSWORD = "meijo2026";
     let map = null;
-    let currentFloor = 1;
+    let activeLines = [], activeMarkers = [], animMarker = null, animTimer = null;
 
-    let activeLines = [];
-    let activeMarkers = [];
-    let animMarker = null;
-    let animTimer = null;
-
-    // 全体画像のBounds (画像の絶対範囲)
+    // 画像の絶対枠領域
     const imageBounds = [[-1000, 0], [0, 1000]];
 
-    // 階数ごとの表示領域
-    const floorViewBounds = {
-      1: [[-700, 200], [-500, 450]],
-      2: [[-550, 200], [-380, 450]],
-      3: [[-400, 200], [-230, 450]],
-      4: [[-250, 200], [-80, 450]],
-      5: [[-700, 50], [-520, 300]],
-      6: [[-520, 50], [-350, 300]],
-      7: [[-380, 50], [-220, 300]],
-      8: [[-230, 50], [-80, 300]]
-    };
-
-    // スポットデータ
     const spots = {
       "1g_1f_3s4": { name: "1号館 1F 3S4", floor: 1, pos: [-657, 228] },
       "1g_1f_保健室": { name: "1号館 1F 保健室", floor: 1, pos: [-634, 278] },
@@ -242,7 +139,6 @@ HTML
       "1g_8f_ict2": { name: "1号館 8F ICT2", floor: 8, pos: [-145, 126] }
     };
 
-    // 各階のエスカレーター乗り場位置
     const floorEscalators = {
       1: { name: "1F エスカレーター", pos: [-570, 298] },
       2: { name: "2F エスカレーター", pos: [-450, 298] },
@@ -255,14 +151,11 @@ HTML
     };
 
     function checkPassword() {
-      const input = document.getElementById('passInput').value;
-      if (input === CORRECT_PASSWORD) {
+      if (document.getElementById('passInput').value === CORRECT_PASSWORD) {
         document.getElementById('pass-screen').style.opacity = '0';
         setTimeout(() => {
           document.getElementById('pass-screen').style.display = 'none';
           document.getElementById('app-screen').style.display = 'block';
-          
-          // アプリ画面が表示されてから確実にマップを描画
           initMap();
         }, 300);
       } else {
@@ -277,7 +170,6 @@ HTML
     function initMap() {
       if (map) return;
 
-      // Leafletマップ作成
       map = L.map('map', {
         crs: L.CRS.Simple,
         minZoom: -3,
@@ -285,138 +177,90 @@ HTML
         zoomControl: false
       });
 
-      // 画像レイヤーを追加
-      const imgOverlay = L.imageOverlay('R8教室配置図-1.png', imageBounds).addTo(map);
+      // 配置図画像を重ねる
+      const overlay = L.imageOverlay('R8教室配置図-1.png', imageBounds).addTo(map);
 
-      // プルダウンの作成
+      // プルダウンのセットアップ
       const startSelect = document.getElementById('startSelect');
       const endSelect = document.getElementById('endSelect');
-
       Object.keys(spots).forEach(key => {
-        const spot = spots[key];
-        startSelect.add(new Option(spot.name, key));
-        endSelect.add(new Option(spot.name, key));
+        startSelect.add(new Option(spots[key].name, key));
+        endSelect.add(new Option(spots[key].name, key));
       });
-
       startSelect.value = "1g_1f_3s4";
       endSelect.value = "1g_4f_2a2";
 
-      // 画像が読み込まれてから画面全体をフィット
-      imgOverlay.on('load', function() {
-        map.invalidateSize();
-        map.fitBounds(imageBounds);
-      });
-
-      // 強制的に初期サイズと表示範囲を確定
-      setTimeout(() => {
-        map.invalidateSize();
-        switchFloor(1);
-      }, 200);
+      // 画像全体を確実に画面に収める
+      map.invalidateSize();
+      map.fitBounds(imageBounds);
     }
 
-    // タブ切り替え処理
     function switchFloor(floorNum) {
-      currentFloor = floorNum;
-
-      document.querySelectorAll('.floor-tab').forEach((tab, index) => {
-        if (index + 1 === floorNum) {
-          tab.classList.add('active');
-        } else {
-          tab.classList.remove('active');
-        }
+      document.querySelectorAll('.floor-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i + 1 === floorNum);
       });
 
       if (map) {
         map.invalidateSize();
-        if (floorViewBounds[floorNum]) {
-          map.flyToBounds(floorViewBounds[floorNum], { padding: [10, 10], duration: 1.0 });
-        } else {
-          map.fitBounds(imageBounds);
-        }
+        // 画像全体が画面に収まるように表示
+        map.fitBounds(imageBounds);
       }
     }
 
-    // 階層ナビ計算＆アニメーション演出
     function calculateRoute() {
       const startKey = document.getElementById('startSelect').value;
       const endKey = document.getElementById('endSelect').value;
+      if (startKey === endKey) { alert("出発地と目的地を変えてください。"); return; }
 
-      if (startKey === endKey) {
-        alert("出発地と目的地を変えてください。");
-        return;
-      }
-
-      // クリア処理
       activeLines.forEach(l => map.removeLayer(l));
       activeMarkers.forEach(m => map.removeLayer(m));
       if (animMarker) map.removeLayer(animMarker);
       if (animTimer) clearInterval(animTimer);
-      activeLines = [];
-      activeMarkers = [];
+      activeLines = []; activeMarkers = [];
 
       const start = spots[startKey];
       const end = spots[endKey];
       const guideContainer = document.getElementById('step-guide');
-      guideContainer.innerHTML = "";
 
-      // パターンA: 同一階の移動
       if (start.floor === end.floor) {
         switchFloor(start.floor);
-
         const line = L.polyline([start.pos, end.pos], { color: '#2563eb', weight: 5 }).addTo(map);
         const m1 = L.marker(start.pos).addTo(map).bindPopup(`<b>出発: ${start.name}</b>`).openPopup();
         const m2 = L.marker(end.pos).addTo(map).bindPopup(`<b>到着: ${end.name}</b>`);
-
         activeLines.push(line);
         activeMarkers.push(m1, m2);
 
-        guideContainer.innerHTML = `
-          <div class="step-card">
-            <strong>📍 ${start.floor}F内での移動</strong>
-            ${start.name} から ${end.name} へ直接移動します。
-          </div>
-        `;
-
+        guideContainer.innerHTML = `<div class="step-card"><strong>📍 ${start.floor}F内移動</strong>${start.name} ➔ ${end.name}</div>`;
         startNormalAnimation([start.pos, end.pos]);
-      } 
-      // パターンB: エスカレーターを利用した階跨ぎ移動
-      else {
+      } else {
         switchFloor(start.floor);
-
         const startEsc = floorEscalators[start.floor];
         const endEsc = floorEscalators[end.floor];
 
-        // 1. 出発階の線
         const lineStart = L.polyline([start.pos, startEsc.pos], { color: '#2563eb', weight: 5, dashArray: '6,6' }).addTo(map);
+        const lineEsc = L.polyline([startEsc.pos, endEsc.pos], { color: '#f59e0b', weight: 6, dashArray: '4,8' }).addTo(map);
+        const lineEnd = L.polyline([endEsc.pos, end.pos], { color: '#059669', weight: 5 }).addTo(map);
+
         const mStart = L.marker(start.pos).addTo(map).bindPopup(`<b>出発: ${start.name}</b>`).openPopup();
         const mEsc1 = L.marker(startEsc.pos).addTo(map).bindPopup(`<b>エスカレーター乗り場</b>`);
-
-        // 2. 階移動接続線（エスカレーター移動区間）
-        const lineEsc = L.polyline([startEsc.pos, endEsc.pos], { color: '#f59e0b', weight: 6, dashArray: '4,8' }).addTo(map);
-
-        // 3. 到着階の線
-        const lineEnd = L.polyline([endEsc.pos, end.pos], { color: '#059669', weight: 5 }).addTo(map);
         const mEsc2 = L.marker(endEsc.pos).addTo(map).bindPopup(`<b>${end.floor}F エスカレーター降り口</b>`);
         const mEnd = L.marker(end.pos).addTo(map).bindPopup(`<b>到着: ${end.name}</b>`);
 
         activeLines.push(lineStart, lineEsc, lineEnd);
         activeMarkers.push(mStart, mEsc1, mEsc2, mEnd);
 
-        // ガイド表示
         guideContainer.innerHTML = `
           <div class="step-card">
-            <strong>Step 1: ${start.floor}F エスカレーターへ向かう</strong>
-            ${start.name} から ${start.floor}F エスカレーターへ移動します。
-            <br><button class="step-btn" onclick="switchFloor(${start.floor})">${start.floor}Fマップを表示</button>
+            <strong>Step 1: ${start.floor}F エスカレーターへ</strong>
+            ${start.name} ➔ エスカレーター
           </div>
           <div class="step-card" style="border-left-color: #f59e0b;">
             <strong>Step 2: ⚡ エスカレーターで階移動</strong>
-            エスカレーターで ${start.floor}F から <strong>${end.floor}F</strong> へ向かいます。
+            ${start.floor}F ➔ <strong>${end.floor}F</strong>
           </div>
           <div class="step-card" style="border-left-color: #059669;">
-            <strong>Step 3: ${end.floor}F 目的地へ移動</strong>
-            ${end.floor}F エスカレーターから ${end.name} へ向かいます。
-            <br><button class="step-btn" onclick="switchFloor(${end.floor})">${end.floor}Fマップを表示</button>
+            <strong>Step 3: ${end.floor}F 目的地へ</strong>
+            エスカレーター ➔ ${end.name}
           </div>
         `;
 
@@ -424,70 +268,49 @@ HTML
       }
     }
 
-    // 通常アニメーション
     function startNormalAnimation(pathCoords) {
       const pulseIcon = L.divIcon({ className: 'animated-pulse-icon', iconSize: [16, 16], iconAnchor: [8, 8] });
       animMarker = L.marker(pathCoords[0], { icon: pulseIcon }).addTo(map);
-
       let step = 0;
-      const steps = 30;
       animTimer = setInterval(() => {
-        step = (step + 1) % steps;
-        const progress = step / steps;
-        const y = pathCoords[0][0] + (pathCoords[1][0] - pathCoords[0][0]) * progress;
-        const x = pathCoords[0][1] + (pathCoords[1][1] - pathCoords[0][1]) * progress;
-        animMarker.setLatLng([y, x]);
+        step = (step + 1) % 30;
+        const progress = step / 30;
+        animMarker.setLatLng([
+          pathCoords[0][0] + (pathCoords[1][0] - pathCoords[0][0]) * progress,
+          pathCoords[0][1] + (pathCoords[1][1] - pathCoords[0][1]) * progress
+        ]);
       }, 30);
     }
 
-    // ⚡ エスカレーターアニメーション
     function startEscalatorSequence(pStart, pEsc1, pEsc2, pEnd, fStart, fEnd) {
       const normalIcon = L.divIcon({ className: 'animated-pulse-icon', iconSize: [16, 16], iconAnchor: [8, 8] });
       const escIcon = L.divIcon({ className: 'escalator-pulse-icon', html: '⚡', iconSize: [24, 24], iconAnchor: [12, 12] });
 
       animMarker = L.marker(pStart, { icon: normalIcon }).addTo(map);
-
-      let phase = 0;
-      let step = 0;
-      const steps = 40;
+      let phase = 0, step = 0;
 
       animTimer = setInterval(() => {
         step++;
-        const progress = step / steps;
+        const progress = step / 40;
 
         if (phase === 0) {
-          const y = pStart[0] + (pEsc1[0] - pStart[0]) * progress;
-          const x = pStart[1] + (pEsc1[1] - pStart[1]) * progress;
-          animMarker.setLatLng([y, x]);
-
-          if (step >= steps) {
-            phase = 1;
-            step = 0;
-            animMarker.setIcon(escIcon);
-            switchFloor(fEnd);
-          }
-        } 
-        else if (phase === 1) {
-          const y = pEsc1[0] + (pEsc2[0] - pEsc1[0]) * progress;
-          const x = pEsc1[1] + (pEsc2[1] - pEsc1[1]) * progress;
-          animMarker.setLatLng([y, x]);
-
-          if (step >= steps) {
-            phase = 2;
-            step = 0;
-            animMarker.setIcon(normalIcon);
-          }
-        } 
-        else if (phase === 2) {
-          const y = pEsc2[0] + (pEnd[0] - pEsc2[0]) * progress;
-          const x = pEsc2[1] + (pEnd[1] - pEsc2[1]) * progress;
-          animMarker.setLatLng([y, x]);
-
-          if (step >= steps) {
-            phase = 0;
-            step = 0;
-            switchFloor(fStart);
-          }
+          animMarker.setLatLng([
+            pStart[0] + (pEsc1[0] - pStart[0]) * progress,
+            pStart[1] + (pEsc1[1] - pStart[1]) * progress
+          ]);
+          if (step >= 40) { phase = 1; step = 0; animMarker.setIcon(escIcon); switchFloor(fEnd); }
+        } else if (phase === 1) {
+          animMarker.setLatLng([
+            pEsc1[0] + (pEsc2[0] - pEsc1[0]) * progress,
+            pEsc1[1] + (pEsc2[1] - pEsc1[1]) * progress
+          ]);
+          if (step >= 40) { phase = 2; step = 0; animMarker.setIcon(normalIcon); }
+        } else if (phase === 2) {
+          animMarker.setLatLng([
+            pEsc2[0] + (pEnd[0] - pEsc2[0]) * progress,
+            pEsc2[1] + (pEnd[1] - pEsc2[1]) * progress
+          ]);
+          if (step >= 40) { phase = 0; step = 0; switchFloor(fStart); }
         }
       }, 30);
     }
