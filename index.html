@@ -14,10 +14,8 @@ HTML
 
     /* パスワード画面 */
     #pass-screen {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: #1a365d;
-      display: flex; justify-content: center; align-items: center;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #1a365d; display: flex; justify-content: center; align-items: center;
       z-index: 9999;
     }
     .login-box {
@@ -117,74 +115,71 @@ HTML
     if (e.key === 'Enter') checkPassword();
   });
 
-  // 画像座標（下原点に対応した正確な座標データ） [Y, X]
+  // 画像のピクセル座標 [Y (上からの距離px), X (左からの距離px)]
   const spots = {
     // === 1号館 2F ===
-    "2f_2a1":      { name: "1号館 2F 2A1教室",      pos: [225, 370] },
-    "2f_3a1":      { name: "1号館 2F 3A1教室",      pos: [225, 440] },
-    "2f_3a12":     { name: "1号館 2F 3A12教室",     pos: [225, 490] },
-    "2f_3a13":     { name: "1号館 2F 3A13教室",     pos: [225, 520] },
-    "2f_3a14":     { name: "1号館 2F 3A14教室",     pos: [225, 550] },
-    "2f_3a7":      { name: "1号館 2F 3A7教室",      pos: [160, 370] },
+    "2f_2a1":      { name: "1号館 2F 2A1教室",      pos: [510, 260] },
+    "2f_3a1":      { name: "1号館 2F 3A1教室",      pos: [510, 305] },
+    "2f_3a12":     { name: "1号館 2F 3A12教室",     pos: [510, 340] },
+    "2f_3a13":     { name: "1号館 2F 3A13教室",     pos: [510, 365] },
+    "2f_3a14":     { name: "1号館 2F 3A14教室",     pos: [510, 395] },
+    "2f_3a7":      { name: "1号館 2F 3A7教室",      pos: [555, 260] },
 
     // === 1号館 3F ===
-    "3f_3a2":      { name: "1号館 3F 3A2教室",      pos: [430, 370] },
-    "3f_3a3":      { name: "1号館 3F 3A3教室",      pos: [380, 370] },
-    "3f_3a4":      { name: "1号館 3F 3A4教室",      pos: [330, 370] },
-    "3f_3a5":      { name: "1号館 3F 3A5教室",      pos: [280, 370] },
-    "3f_3a6":      { name: "1号館 3F 3A6教室",      pos: [230, 370] },
-    "3f_2s4":      { name: "1号館 3F 2S4教室",      pos: [430, 440] },
+    "3f_3a2":      { name: "1号館 3F 3A2教室",      pos: [365, 260] },
+    "3f_3a3":      { name: "1号館 3F 3A3教室",      pos: [415, 260] },
+    "3f_3a4":      { name: "1号館 3F 3A4教室",      pos: [465, 260] },
+    "3f_3a5":      { name: "1号館 3F 3A5教室",      pos: [515, 260] },
+    "3f_3a6":      { name: "1号館 3F 3A6教室",      pos: [565, 260] },
+    "3f_2s4":      { name: "1号館 3F 2S4教室",      pos: [365, 310] },
 
     // === 1号館 4F ===
-    "4f_2a2":      { name: "1号館 4F 2A2教室",      pos: [940, 370] },
-    "4f_2a3":      { name: "1号館 4F 2A3教室",      pos: [880, 370] },
-    "4f_2a4":      { name: "1号館 4F 2A4教室",      pos: [820, 370] },
-    "4f_2a5":      { name: "1号館 4F 2A5教室",      pos: [760, 370] },
-    "4f_2a6":      { name: "1号館 4F 2A6教室",      pos: [700, 370] },
-    "4f_2a7":      { name: "1号館 4F 2A7教室",      pos: [940, 440] },
-    "4f_2a8":      { name: "1号館 4F 2A8教室",      pos: [760, 440] },
-    "4f_2a9":      { name: "1号館 4F 2A9教室",      pos: [700, 440] },
+    "4f_2a2":      { name: "1号館 4F 2A2教室",      pos: [60,  260] },
+    "4f_2a3":      { name: "1号館 4F 2A3教室",      pos: [110, 260] },
+    "4f_2a4":      { name: "1号館 4F 2A4教室",      pos: [160, 260] },
+    "4f_2a5":      { name: "1号館 4F 2A5教室",      pos: [210, 260] },
+    "4f_2a6":      { name: "1号館 4F 2A6教室",      pos: [260, 260] },
+    "4f_2a7":      { name: "1号館 4F 2A7教室",      pos: [60,  310] },
+    "4f_2a8":      { name: "1号館 4F 2A8教室",      pos: [210, 310] },
+    "4f_2a9":      { name: "1号館 4F 2A9教室",      pos: [260, 310] },
 
     // === 1号館 6F ===
-    "6f_1_1":      { name: "1号館 6F 1-1教室",      pos: [225, 225] },
-    "6f_1_2":      { name: "1号館 6F 1-2教室",      pos: [160, 225] },
-    "6f_1_8":      { name: "1号館 6F 1-8教室",      pos: [160, 290] },
+    "6f_1_1":      { name: "1号館 6F 1-1教室",      pos: [510, 168] },
+    "6f_1_2":      { name: "1号館 6F 1-2教室",      pos: [555, 168] },
+    "6f_1_8":      { name: "1号館 6F 1-8教室",      pos: [555, 215] },
 
     // === 1号館 7F ===
-    "7f_staff":    { name: "1号館 7F 職員室",       pos: [380, 250] },
-    "7f_2a14":     { name: "1号館 7F 2A14教室",     pos: [280, 225] },
-    "7f_2a13":     { name: "1号館 7F 2A13教室",     pos: [225, 225] },
-    "7f_2a12":     { name: "1号館 7F 2A12教室",     pos: [280, 290] },
-    "7f_2a11":     { name: "1号館 7F 2A11教室",     pos: [225, 290] },
+    "7f_staff":    { name: "1号館 7F 職員室",       pos: [380, 185] },
 
     // === 1号館 8F ===
-    "8f_ict2":     { name: "1号館 8F ICTルーム2",   pos: [940, 225] },
-    "8f_eng_ssh":  { name: "1号館 8F 英語科/SSH",   pos: [880, 225] },
-    "8f_info_proc":{ name: "1号館 8F 情報処理室",   pos: [780, 225] },
+    "8f_ict2":     { name: "1号館 8F ICTルーム2",   pos: [60,  135] },
+    "8f_eng_ssh":  { name: "1号館 8F 英語科/SSH",   pos: [110, 135] },
 
     // === 2号館 4F ===
-    "2g_4f_store":  { name: "2号館 4F 購買",        pos: [880, 760] },
-    "2g_4f_music":  { name: "2号館 4F 音楽室",      pos: [820, 840] },
+    "2g_4f_store":  { name: "2号館 4F 購買",        pos: [170, 560] },
 
     // === 3号館 ===
-    "3g_2f_avl":    { name: "3号館 2F 視聴覚室(AVL)",pos: [520, 840] },
+    "3g_2f_avl":    { name: "3号館 2F 視聴覚室(AVL)",pos: [90,  705] },
 
     // === 4号館 ===
-    "4g_1f_library":{ name: "4号館 1F 図書館",      pos: [225, 840] }
+    "4g_1f_library":{ name: "4号館 1F 図書館",      pos: [740, 510] }
   };
 
   function initMap() {
     if (map) return;
 
+    // 画像サイズを設定
+    const imgWidth = 1000;
+    const imgHeight = 700;
+
+    // 左上[0,0]から右下[imgHeight, imgWidth]をマップ範囲に設定
+    const bounds = [[0, 0], [imgHeight, imgWidth]];
+
     map = L.map('map', {
       crs: L.CRS.Simple,
-      minZoom: -1.5,
+      minZoom: -1,
       maxZoom: 2
     });
-
-    const imgWidth = 1400;
-    const imgHeight = 1000;
-    const bounds = [[0, 0], [imgHeight, imgWidth]];
 
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
     map.fitBounds(bounds);
@@ -205,10 +200,11 @@ HTML
       optEnd.textContent = spot.name;
       endSelect.appendChild(optEnd);
 
-      L.marker(spot.pos).addTo(map).bindPopup(`<b>${spot.name}</b>`);
+      // 上下反転を防ぐ正しい座標変換 [imgHeight - Y, X]
+      const mapPos = [imgHeight - spot.pos[0], spot.pos[1]];
+      L.marker(mapPos).addTo(map).bindPopup(`<b>${spot.name}</b>`);
     });
 
-    // 初期選択：4F 2A2 -> 2F 3A1
     startSelect.value = "4f_2a2";
     endSelect.value = "2f_3a1";
   }
@@ -224,8 +220,12 @@ HTML
 
     if (activeLine) map.removeLayer(activeLine);
 
-    const startPos = spots[startKey].pos;
-    const endPos = spots[endKey].pos;
+    const imgHeight = 700;
+    const startSpot = spots[startKey];
+    const endSpot = spots[endKey];
+
+    const startPos = [imgHeight - startSpot.pos[0], startSpot.pos[1]];
+    const endPos = [imgHeight - endSpot.pos[0], endSpot.pos[1]];
 
     activeLine = L.polyline([startPos, endPos], {
       color: '#e53e3e',
