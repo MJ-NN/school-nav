@@ -225,23 +225,22 @@ HTML
   };
 
   // 🗺️ 2. ノード（実際の画像上の位置座標）
-  // 校長室を突き抜けず、右側の「階段マーク」を通るように正しく設定しています
   const nodes = {
     // 【1階】
-    "n_1g_1f_office":   { pos: [-580, 500] }, // 事務室のピンの位置
+    "n_1g_1f_office":   { pos: [-580, 500] }, // 事務室
     "n_1g_1f_corridor": { pos: [-580, 520] }, // 1F 廊下
-    "n_1g_1f_stairs":   { pos: [-580, 580] }, // 1F 階段（マークの位置）
+    "n_1g_1f_stairs":   { pos: [-580, 580] }, // 1F 階段
     "n_2g_1f_library":  { pos: [-627, 520] },
 
     // 【2階】
     "n_1g_2f_3a1":      { pos: [-200, 500] }, // 2F 3A1
     "n_1g_2f_corridor": { pos: [-200, 520] }, // 2F 廊下
-    "n_1g_2f_stairs":   { pos: [-200, 580] }, // 2F 階段（マークの位置）
+    "n_1g_2f_stairs":   { pos: [-200, 580] }, // 2F 階段
 
     // 【3階】
-    "n_1g_3f_2s1":      { pos: [ -30, 500] }, // 3F 2S1のピンの位置
+    "n_1g_3f_2s1":      { pos: [ -30, 500] }, // 3F 2S1
     "n_1g_3f_corridor": { pos: [ -30, 520] }, // 3F 廊下
-    "n_1g_3f_stairs":   { pos: [ -30, 580] }, // 3F 階段（マークの位置）
+    "n_1g_3f_stairs":   { pos: [ -30, 580] }, // 3F 階段
 
     // 【4階】
     "n_1g_4f_2a2":      { pos: [-181, 228] },
@@ -249,20 +248,18 @@ HTML
     "n_2g_4f_shop":     { pos: [-191, 499] }
   };
 
-  // 🚶 3. ネットワーク接続
-  // 階の移動（1F↔2F, 2F↔3Fなど）は「stairs（階段）」同士のみを線で結びます
+  // 🚶 3. ネットワーク接続（修正版）
   const graph = {
     // --- 1階 ---
     "n_1g_1f_office":   { "n_1g_1f_corridor": 5 },
     "n_1g_1f_corridor": { "n_1g_1f_office": 5, "n_1g_1f_stairs": 10, "n_2g_1f_library": 30 },
     "n_2g_1f_library":  { "n_1g_1f_corridor": 30 },
-    // 階段から上階の階段へ
     "n_1g_1f_stairs":   { "n_1g_1f_corridor": 10, "n_1g_2f_stairs": 20 },
 
     // --- 2階 ---
     "n_1g_2f_3a1":      { "n_1g_2f_corridor": 5 },
     "n_1g_2f_corridor": { "n_1g_2f_3a1": 5, "n_1g_2f_stairs": 10 },
-    "n_2g_2f_stairs":   { "n_1g_2f_corridor": 10, "n_1g_1f_stairs": 20, "n_1g_3f_stairs": 20 },
+    "n_1g_2f_stairs":   { "n_1g_2f_corridor": 10, "n_1g_1f_stairs": 20, "n_1g_3f_stairs": 20 },
 
     // --- 3階 ---
     "n_1g_3f_2s1":      { "n_1g_3f_corridor": 5 },
