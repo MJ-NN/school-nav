@@ -28,7 +28,7 @@ HTML
     * { box-sizing: border-box; font-family: 'Inter', 'Noto Sans JP', sans-serif; }
     body { margin: 0; padding: 0; background: #f8fafc; color: #334155; overflow: hidden; }
 
-    /* 🔑 パスワード認証画面 */
+    /* 🔑 パスワード画面 */
     #pass-screen {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: var(--bg-gradient); display: flex; justify-content: center; align-items: center; z-index: 9999;
@@ -57,14 +57,13 @@ HTML
       transition: background 0.2s, transform 0.1s; box-shadow: var(--shadow-md);
     }
     .login-card button:hover { background: var(--accent-hover); }
-    .login-card button:active { transform: scale(0.98); }
     .error-msg { color: #ef4444; font-size: 12px; margin-top: 12px; font-weight: 500; display: none; }
 
     /* 🗺️ メイン画面 */
     #app-screen { display: none; height: 100vh; width: 100vw; position: relative; }
     #map { height: 100vh; width: 100vw; background: #f1f5f9; z-index: 1; }
 
-    /* Floating UI パネル */
+    /* Control Panel */
     .control-panel {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
       z-index: 1000; width: 92%; max-width: 680px;
@@ -92,7 +91,6 @@ HTML
       cursor: pointer; text-decoration: underline; padding: 2px 0; align-self: flex-start;
       display: flex; align-items: center; gap: 4px;
     }
-    .btn-help:hover { color: #1d4ed8; }
 
     .btn-nav {
       width: 100%; padding: 12px; font-size: 15px; font-weight: 700; color: white;
@@ -102,7 +100,7 @@ HTML
     }
     .btn-nav:hover { box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); transform: translateY(-1px); }
 
-    /* 🖼️ 現在地ヒント用 モーダル */
+    /* Modal */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
@@ -125,7 +123,7 @@ HTML
     .hint-card img { width: 100%; height: 100px; object-fit: cover; background: #e2e8f0; }
     .hint-card-title { font-size: 12px; font-weight: 700; padding: 8px 6px; color: #334155; }
 
-    /* アニメーション用パルスアイコン */
+    /* Pulse Icon */
     .animated-pulse-icon {
       background: #2563eb; border: 3px solid #ffffff; border-radius: 50%;
       box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
@@ -170,7 +168,6 @@ HTML
       </div>
     </div>
 
-    <!-- 💡 現在地ヒントボタン -->
     <button class="btn-help" onclick="openModal()">
       <span>📍 現在地がわからないとき（目印から探す）</span>
     </button>
@@ -195,9 +192,7 @@ HTML
 
 <script>
   const CORRECT_PASSWORD = "meijo2026";
-
-  let map = null;
-  let activeLine = null, animMarker = null, animTimer = null;
+  let map = null, activeLine = null, animMarker = null, animTimer = null;
   let startMarker = null, endMarker = null;
 
   function checkPassword() {
@@ -219,110 +214,77 @@ HTML
     if (e.key === 'Enter') checkPassword();
   });
 
-  // 全86箇所の座標データ
+  // 📍 1. スポット（目的地・出発地）一覧
   const spots = {
-    "1g_1f_渉外室": { "name": "1号館 1F 渉外室", "pos": [-562, 226] },
-    "1g_1f_3s1": { "name": "1号館 1F 3S1", "pos": [-586, 230] },
-    "1g_1f_3s2": { "name": "1号館 1F 3S2", "pos": [-611, 228] },
-    "1g_1f_3s3": { "name": "1号館 1F 3S3", "pos": [-641, 224] },
-    "1g_1f_3s4": { "name": "1号館 1F 3S4", "pos": [-657, 228] },
-    "1g_1f_保健室": { "name": "1号館 1F 保健室", "pos": [-634, 278] },
-    "1g_1f_事務室": { "name": "1号館 1F 事務室", "pos": [-561, 351] },
-    "1g_1f_小会議室": { "name": "1号館 1F 小会議室", "pos": [-645, 331] },
-    "1g_2f_2a1": { "name": "1号館 2F 2A1", "pos": [-425, 228] },
-    "1g_2f_3a1": { "name": "1号館 2F 3A1", "pos": [-422, 272] },
-    "1g_2f_3a12": { "name": "1号館 2F 3A12", "pos": [-420, 310] },
-    "1g_2f_3a13": { "name": "1号館 2F 3A13", "pos": [-420, 340] },
-    "1g_2f_3a14": { "name": "1号館 2F 3A14", "pos": [-420, 370] },
-    "1g_2f_3a7": { "name": "1号館 2F 3A7", "pos": [-442, 225] },
-    "1g_2f_3a8": { "name": "1号館 2F 3A8", "pos": [-467, 230] },
-    "1g_2f_3a9": { "name": "1号館 2F 3A9", "pos": [-493, 227] },
-    "1g_2f_3a10": { "name": "1号館 2F 3A10", "pos": [-515, 224] },
-    "1g_2f_生徒指導室": { "name": "1号館 2F 生徒指導室", "pos": [-489, 277] },
-    "1g_3f_3a2": { "name": "1号館 3F 3A2", "pos": [-271, 225] },
-    "1g_3f_3a3": { "name": "1号館 3F 3A3", "pos": [-300, 223] },
-    "1g_3f_3a4": { "name": "1号館 3F 3A4", "pos": [-325, 230] },
-    "1g_3f_3a5": { "name": "1号館 3F 3A5", "pos": [-350, 228] },
-    "1g_3f_3a6": { "name": "1号館 3F 3A6", "pos": [-373, 224] },
-    "1g_3f_2s4": { "name": "1号館 3F 2S4", "pos": [-277, 277] },
-    "1g_3f_2s2": { "name": "1号館 3F 2S2", "pos": [-347, 275] },
-    "1g_3f_2s1": { "name": "1号館 3F 2S1", "pos": [-376, 277] },
-    "1g_3f_2s3": { "name": "1号館 3F 2S3", "pos": [-273, 308] },
-    "1g_3f_生物室": { "name": "1号館 3F 生物室", "pos": [-280, 359] },
-    "1g_3f_化学室": { "name": "1号館 3F 化学室", "pos": [-346, 353] },
-    "1g_3f_物理室": { "name": "1号館 3F 物理室", "pos": [-332, 506] },
-    "1g_3f_alルーム": { "name": "1号館 3F ALルーム", "pos": [-330, 560] },
-    "1g_4f_2a2": { "name": "1号館 4F 2A2", "pos": [-133, 226] },
-    "1g_4f_2a3": { "name": "1号館 4F 2A3", "pos": [-156, 226] },
-    "1g_4f_2a4": { "name": "1号館 4F 2A4", "pos": [-181, 228] },
-    "1g_4f_2a5": { "name": "1号館 4F 2A5", "pos": [-207, 227] },
-    "1g_4f_2a6": { "name": "1号館 4F 2A6", "pos": [-232, 227] },
-    "1g_4f_2a7": { "name": "1号館 4F 2A7", "pos": [-143, 272] },
-    "1g_4f_2a8": { "name": "1号館 4F 2A8", "pos": [-206, 274] },
-    "1g_4f_2a9": { "name": "1号館 4F 2A9", "pos": [-237, 278] },
-    "1g_4f_生徒会顧問室": { "name": "1号館 4F 生徒会顧問室", "pos": [-165, 280] },
-    "1g_5f_3a11": { "name": "1号館 5F 3A11", "pos": [-567, 129] },
-    "1g_5f_2a10": { "name": "1号館 5F 2A10", "pos": [-584, 123] },
-    "1g_5f_1_16": { "name": "1号館 5F 1-16", "pos": [-639, 132] },
-    "1g_5f_1_15": { "name": "1号館 5F 1-15", "pos": [-666, 127] },
-    "1g_5f_1_14": { "name": "1号館 5F 1-14", "pos": [-675, 178] },
-    "1g_5f_1_10": { "name": "1号館 5F 1-10", "pos": [-562, 180] },
-    "1g_5f_1_11": { "name": "1号館 5F 1-11", "pos": [-587, 182] },
-    "1g_5f_1_12": { "name": "1号館 5F 1-12", "pos": [-606, 179] },
-    "1g_5f_1_13": { "name": "1号館 5F 1-13", "pos": [-638, 180] },
-    "1g_6f_1_1": { "name": "1号館 6F 1-1", "pos": [-418, 130] },
-    "1g_6f_1_2": { "name": "1号館 6F 1-2", "pos": [-441, 128] },
-    "1g_6f_1_3": { "name": "1号館 6F 1-3", "pos": [-465, 127] },
-    "1g_6f_1_4": { "name": "1号館 6F 1-4", "pos": [-493, 128] },
-    "1g_6f_1_9": { "name": "1号館 6F 1-9", "pos": [-419, 179] },
-    "1g_6f_1_8": { "name": "1号館 6F 1-8", "pos": [-443, 177] },
-    "1g_6f_1_7": { "name": "1号館 6F 1-7", "pos": [-467, 174] },
-    "1g_6f_1_6": { "name": "1号館 6F 1-6", "pos": [-493, 175] },
-    "1g_6f_選択A": { "name": "1号館 6F 選択A", "pos": [-519, 130] },
-    "1g_7f_職員室": { "name": "1号館 7F 職員室", "pos": [-296, 140] },
-    "1g_7f_2a14": { "name": "1号館 7F 2A14", "pos": [-353, 124] },
-    "1g_7f_2a13": { "name": "1号館 7F 2A13", "pos": [-375, 129] },
-    "1g_8f_ict2": { "name": "1号館 8F ICTルーム2", "pos": [-145, 126] },
-    "1g_8f_ssh": { "name": "1号館 8F SSH", "pos": [-176, 126] },
-    "1g_8f_情報処理室": { "name": "1号館 8F 情報処理室", "pos": [-217, 124] },
-    "1g_8f_大会議室": { "name": "1号館 8F 大会議室", "pos": [-174, 177] },
-    "1g_8f_放送室": { "name": "1号館 8F 放送室", "pos": [-220, 176] },
-    "2g_1f_図書館": { "name": "2号館 1F 図書館", "pos": [-627, 520] },
-    "2g_2f_更衣室A": { "name": "2号館 2F 更衣室A", "pos": [-475, 463] },
-    "2g_2f_更衣室B": { "name": "2号館 2F 更衣室B", "pos": [-469, 497] },
-    "2g_4f_購買": { "name": "2号館 4F 購買", "pos": [-191, 499] },
-    "2g_4f_音楽室": { "name": "2号館 4F 音楽室", "pos": [-212, 561] },
-    "3g_1f_計測実験室": { "name": "3号館 1F 計測実験室", "pos": [-126, 663] },
-    "3g_1f_材料実験室": { "name": "3号館 1F 材料実験室", "pos": [-154, 670] },
-    "3g_1f_溶接実習室": { "name": "3号館 1F 溶接実習室", "pos": [-184, 670] },
-    "3g_2f_avl": { "name": "3号館 2F 視聴覚室(AVL)", "pos": [-132, 741] },
-    "3g_2f_学習ルーム": { "name": "3号館 2F 学習ルーム", "pos": [-196, 734] },
-    "3g_3f_製図室": { "name": "3号館 3F 製図室", "pos": [-138, 810] },
-    "3g_4f_特別教室": { "name": "3号館 4F 特別教室", "pos": [-130, 872] },
-    "3g_4f_作法室": { "name": "3号館 4F 作法室", "pos": [-196, 872] },
-    "4g_1f_機械システム系": { "name": "4号館 1F 機械システム系", "pos": [-330, 690] },
-    "4g_1f_原動機実習室": { "name": "4号館 1F 原動機実習室", "pos": [-432, 674] },
-    "4g_1f_cam実習室": { "name": "4号館 1F CAM実習室", "pos": [-493, 673] },
-    "4g_2f_印刷室": { "name": "4号館 2F 印刷室", "pos": [-402, 734] },
-    "4g_2f_機械システム管理室": { "name": "4号館 2F 機械システム管理室", "pos": [-437, 747] },
-    "4g_3f_cad1": { "name": "4号館 3F CAD室1", "pos": [-438, 816] },
-    "4g_3f_cad2": { "name": "4号館 3F CAD室2", "pos": [-461, 811] },
-    "4g_4f_パソコン3": { "name": "4号館 4F パソコン教室3", "pos": [-443, 881] },
-    "4g_4f_パソコン4": { "name": "4号館 4F パソコン教室4", "pos": [-482, 874] },
-    "4g_4f_商業管理室": { "name": "4号館 4F 商業管理室", "pos": [-511, 877] }
+    "1g_1f_事務室": { name: "1号館 1F 事務室", node: "n_1g_1f_corridor" },
+    "1g_2f_3a1":  { name: "1号館 2F 3A1",  node: "n_1g_2f_corridor" },
+    "1g_3f_2s1":  { name: "1号館 3F 2S1",  node: "n_1g_3f_corridor" },
+    "1g_4f_2a2":  { name: "1号館 4F 2A2",  node: "n_1g_4f_corridor" },
+    "2g_1f_図書館": { name: "2号館 1F 図書館", node: "n_2g_1f_corridor" },
+    "2g_4f_購買":   { name: "2号館 4F 購買",   node: "n_2g_4f_corridor" }
   };
 
-  // 📷 写真・目印ヒントのサンプルデータ（後で画像パスを修正できます）
+  // 🗺️ 2. 通路・階段・エスカレーターのネットワーク（ノード群）
+  const nodes = {
+    // 1階
+    "n_1g_1f_corridor":  { pos: [-561, 351] },
+    "n_1g_1f_stairs":    { pos: [-561, 280] },
+    "n_2g_1f_corridor":  { pos: [-627, 520] },
+
+    // 2階
+    "n_1g_2f_corridor":  { pos: [-422, 272] },
+    "n_1g_2f_stairs":    { pos: [-422, 280] },
+    "n_1g_2f_es":        { pos: [-422, 320] }, // エスカレーター(2F)
+
+    // 3階
+    "n_1g_3f_corridor":  { pos: [-376, 277] },
+    "n_1g_3f_stairs":    { pos: [-376, 280] },
+
+    // 4階
+    "n_1g_4f_corridor":  { pos: [-181, 228] },
+    "n_1g_4f_stairs":    { pos: [-181, 280] },
+    "n_1g_4f_es":        { pos: [-181, 320] }, // エスカレーター(4F)
+    "n_2g_4f_corridor":  { pos: [-191, 499] },
+
+    // 6階
+    "n_1g_6f_es":        { pos: [-418, 320] }  // エスカレーター(6F)
+  };
+
+  // 🚶 3. 道のつながり（エッジ設定）
+  // cost: 移動の重み（距離・時間）。階段やエスカレーターを優先させたい調整も可能
+  const graph = {
+    // 1階の廊下と階段
+    "n_1g_1f_corridor": { "n_1g_1f_stairs": 10, "n_2g_1f_corridor": 30 },
+    "n_1g_1f_stairs": { "n_1g_1f_corridor": 10, "n_1g_2f_stairs": 15 }, // 階段（1F ↔ 2F）
+
+    // 2階
+    "n_1g_2f_corridor": { "n_1g_2f_stairs": 5, "n_1g_2f_es": 5 },
+    "n_1g_2f_stairs": { "n_1g_2f_corridor": 5, "n_1g_1f_stairs": 15, "n_1g_3f_stairs": 15 },
+    
+    // 3階
+    "n_1g_3f_corridor": { "n_1g_3f_stairs": 5 },
+    "n_1g_3f_stairs": { "n_1g_3f_corridor": 5, "n_1g_2f_stairs": 15, "n_1g_4f_stairs": 15 },
+
+    // 4階
+    "n_1g_4f_corridor": { "n_1g_4f_stairs": 5, "n_1g_4f_es": 5, "n_2g_4f_corridor": 25 },
+    "n_1g_4f_stairs": { "n_1g_4f_corridor": 5, "n_1g_3f_stairs": 15 },
+    "n_2g_4f_corridor": { "n_1g_4f_corridor": 25 },
+
+    // ⚡ エスカレーター（2F・4F・6F 間のみ相互接続）
+    "n_1g_2f_es": { "n_1g_2f_corridor": 5, "n_1g_4f_es": 12 },
+    "n_1g_4f_es": { "n_1g_4f_corridor": 5, "n_1g_2f_es": 12, "n_1g_6f_es": 12 },
+    "n_1g_6f_es": { "n_1g_4f_es": 12 }
+  };
+
+  // 📷 写真ヒントデータ
   const hintLandmarks = [
     { key: "1g_1f_事務室", title: "1号館1F 事務室前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=1F+事務室" },
     { key: "2g_1f_図書館", title: "2号館1F 図書館前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=2F+図書館" },
-    { key: "1g_7f_職員室", title: "1号館7F 職員室前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=7F+職員室" },
-    { key: "2g_4f_購買", title: "2号館4F 購買前", img: "https://via.placeholder.com/150/2563eb/ffffff?text=4F+購買" }
+    { key: "2g_4f_購買",   title: "2号館4F 購買前",   img: "https://via.placeholder.com/150/2563eb/ffffff?text=4F+購買" }
   ];
 
   function initMap() {
     if (map) return;
-
     const bounds = [[-700, 0], [0, 1000]];
     map = L.map('map', { crs: L.CRS.Simple, minZoom: -1.5, maxZoom: 2, maxBounds: bounds, zoomControl: false });
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
@@ -339,44 +301,55 @@ HTML
       endSelect.appendChild(optEnd);
     });
 
-    // 🔗 ① URLパラメータ（QRコード）判定の処理
     const urlParams = new URLSearchParams(window.location.search);
     const paramStart = urlParams.get('start');
-
     if (paramStart && spots[paramStart]) {
       startSelect.value = paramStart;
-      endSelect.value = "1g_7f_職員室"; // デフォルト目的地
+      endSelect.value = "2g_4f_購買";
     } else {
       startSelect.value = "1g_1f_事務室";
-      endSelect.value = "1g_5f_1_10";
+      endSelect.value = "1g_3f_2s1";
     }
 
     renderHintModal();
     showRoute();
   }
 
-  // 🖼️ モーダルに目印カードを出力
-  function renderHintModal() {
-    const container = document.getElementById('hintContainer');
-    container.innerHTML = "";
-    hintLandmarks.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'hint-card';
-      card.innerHTML = `
-        <img src="${item.img}" alt="${item.title}">
-        <div class="hint-card-title">${item.title}</div>
-      `;
-      card.onclick = () => {
-        document.getElementById('startSelect').value = item.key;
-        closeModal();
-        showRoute();
-      };
-      container.appendChild(card);
+  // 🧠 最短経路計算（ダイクストラ法）
+  function dijkstra(startNode, targetNode) {
+    let distances = {}, parents = {}, pq = [];
+    Object.keys(nodes).forEach(node => {
+      distances[node] = Infinity;
+      parents[node] = null;
     });
-  }
+    distances[startNode] = 0;
+    pq.push({ node: startNode, dist: 0 });
 
-  function openModal() { document.getElementById('hintModal').style.display = 'flex'; }
-  function closeModal() { document.getElementById('hintModal').style.display = 'none'; }
+    while (pq.length > 0) {
+      pq.sort((a, b) => a.dist - b.dist);
+      let { node: current } = pq.shift();
+
+      if (current === targetNode) break;
+
+      let neighbors = graph[current] || {};
+      for (let neighbor in neighbors) {
+        let alt = distances[current] + neighbors[neighbor];
+        if (alt < distances[neighbor]) {
+          distances[neighbor] = alt;
+          parents[neighbor] = current;
+          pq.push({ node: neighbor, dist: alt });
+        }
+      }
+    }
+
+    let path = [];
+    let curr = targetNode;
+    while (curr) {
+      path.unshift(nodes[curr].pos);
+      curr = parents[curr];
+    }
+    return path;
+  }
 
   function showRoute() {
     const startKey = document.getElementById('startSelect').value;
@@ -396,31 +369,60 @@ HTML
     const startSpot = spots[startKey];
     const endSpot = spots[endKey];
 
-    startMarker = L.marker(startSpot.pos).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
-    endMarker = L.marker(endSpot.pos).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
+    // 最短通路ルートを計算
+    const routePath = dijkstra(startSpot.node, endSpot.node);
 
-    activeLine = L.polyline([startSpot.pos, endSpot.pos], {
-      color: '#cbd5e1', weight: 4, dashArray: '6, 6', opacity: 0.8
-    }).addTo(map);
+    startMarker = L.marker(routePath[0]).addTo(map).bindPopup(`<b>[出発地] ${startSpot.name}</b>`).openPopup();
+    endMarker = L.marker(routePath[routePath.length - 1]).addTo(map).bindPopup(`<b>[目的地] ${endSpot.name}</b>`);
 
+    // 🚶 通路に沿った青い線を描画
+    activeLine = L.polyline(routePath, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(map);
+
+    // アニメーション用マーカー
     const pulseIcon = L.divIcon({ className: 'animated-pulse-icon', iconSize: [16, 16], iconAnchor: [8, 8] });
-    animMarker = L.marker(startSpot.pos, { icon: pulseIcon }).addTo(map);
+    animMarker = L.marker(routePath[0], { icon: pulseIcon }).addTo(map);
 
-    let step = 0;
-    const totalSteps = 100;
-    const startY = startSpot.pos[0], startX = startSpot.pos[1];
-    const endY = endSpot.pos[0], endX = endSpot.pos[1];
+    // マルチセグメントに沿ったアニメーション処理
+    let currentSegment = 0;
+    let progress = 0;
 
     animTimer = setInterval(() => {
-      step = (step + 1) % (totalSteps + 1);
-      const progress = step / totalSteps;
-      const currentY = startY + (endY - startY) * progress;
-      const currentX = startX + (endX - startX) * progress;
+      progress += 0.04;
+      if (progress >= 1) {
+        progress = 0;
+        currentSegment++;
+        if (currentSegment >= routePath.length - 1) {
+          currentSegment = 0;
+        }
+      }
+      const p1 = routePath[currentSegment];
+      const p2 = routePath[currentSegment + 1];
+      const currentY = p1[0] + (p2[0] - p1[0]) * progress;
+      const currentX = p1[1] + (p2[1] - p1[1]) * progress;
       animMarker.setLatLng([currentY, currentX]);
-    }, 25);
+    }, 30);
 
-    map.fitBounds(activeLine.getBounds(), { padding: [100, 100] });
+    map.fitBounds(activeLine.getBounds(), { padding: [80, 80] });
   }
+
+  function renderHintModal() {
+    const container = document.getElementById('hintContainer');
+    container.innerHTML = "";
+    hintLandmarks.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'hint-card';
+      card.innerHTML = `<img src="${item.img}" alt="${item.title}"><div class="hint-card-title">${item.title}</div>`;
+      card.onclick = () => {
+        document.getElementById('startSelect').value = item.key;
+        closeModal();
+        showRoute();
+      };
+      container.appendChild(card);
+    });
+  }
+
+  function openModal() { document.getElementById('hintModal').style.display = 'flex'; }
+  function closeModal() { document.getElementById('hintModal').style.display = 'none'; }
 </script>
 
 </body>
