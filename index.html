@@ -4,11 +4,9 @@ HTML
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>名城大学附属高等学校 校内ナビ</title>
-  <!-- Leaflet CDN -->
+  <title>名城大学附属高等学校 校内ナビ（全教室調整モード）</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Google Fonts (Inter & Noto Sans JP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -17,378 +15,192 @@ HTML
     :root {
       --primary-color: #0f172a;
       --accent-color: #2563eb;
-      --accent-hover: #1d4ed8;
-      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      --glass-bg: rgba(255, 255, 255, 0.85);
-      --glass-border: rgba(255, 255, 255, 0.3);
-      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --glass-bg: rgba(255, 255, 255, 0.92);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
 
-    * {
-      box-sizing: border-box;
-      font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
-    }
+    * { box-sizing: border-box; font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+    body { margin: 0; padding: 0; background: #f8fafc; color: #334155; overflow: hidden; }
 
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f8fafc;
-      color: #334155;
-      overflow: hidden;
-    }
-
-    /* 🔑 パスワード認証画面 */
     #pass-screen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: var(--bg-gradient);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      display: flex; justify-content: center; align-items: center; z-index: 9999;
     }
-
     .login-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border);
-      padding: 40px 32px;
-      border-radius: 20px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      text-align: center;
-      width: 90%;
-      max-width: 380px;
-      animation: fadeIn 0.4s ease-out;
+      background: rgba(255, 255, 255, 0.95); padding: 32px 24px; border-radius: 20px;
+      text-align: center; width: 90%; max-width: 360px; box-shadow: var(--shadow-lg);
     }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .login-card .logo-badge {
-      display: inline-block;
-      background: #eff6ff;
-      color: var(--accent-color);
-      font-size: 12px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 20px;
-      margin-bottom: 12px;
-      letter-spacing: 0.05em;
-    }
-
-    .login-card h2 {
-      margin: 0 0 8px 0;
-      color: var(--primary-color);
-      font-size: 20px;
-      font-weight: 700;
-      line-height: 1.4;
-    }
-
-    .login-card p {
-      font-size: 13px;
-      color: #64748b;
-      margin: 0 0 24px 0;
-      line-height: 1.5;
-    }
-
+    .login-card h2 { margin: 0 0 8px; color: var(--primary-color); font-size: 18px; }
     .login-card input {
-      width: 100%;
-      padding: 12px 16px;
-      font-size: 15px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      text-align: center;
-      outline: none;
-      transition: all 0.2s;
+      width: 100%; padding: 12px; font-size: 15px; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; margin-bottom: 12px; text-align: center; outline: none;
     }
-
-    .login-card input:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-    }
-
     .login-card button {
-      width: 100%;
-      padding: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      color: white;
-      background: var(--accent-color);
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      box-shadow: var(--shadow-md);
+      width: 100%; padding: 12px; font-size: 15px; font-weight: 600;
+      color: white; background: var(--accent-color); border: none; border-radius: 10px; cursor: pointer;
     }
 
-    .login-card button:hover {
-      background: var(--accent-hover);
-    }
+    #app-screen { display: none; height: 100vh; width: 100vw; position: relative; }
+    #map { height: 100vh; width: 100vw; background: #f1f5f9; cursor: crosshair; }
 
-    .login-card button:active {
-      transform: scale(0.98);
-    }
-
-    .error-msg {
-      color: #ef4444;
-      font-size: 12px;
-      margin-top: 12px;
-      font-weight: 500;
-      display: none;
-    }
-
-    /* 🗺️ メイン画面 */
-    #app-screen {
-      display: none;
-      height: 100vh;
-      width: 100vw;
-      position: relative;
-    }
-
-    #map {
-      height: 100vh;
-      width: 100vw;
-      background: #f1f5f9;
-      z-index: 1;
-    }
-
-    /* Floating UI パネル */
     .control-panel {
-      position: absolute;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      width: 92%;
-      max-width: 680px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      padding: 16px 20px;
-      box-shadow: var(--shadow-lg);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; width: 92%; max-width: 750px;
+      background: var(--glass-bg); backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border); border-radius: 16px;
+      padding: 14px 18px; box-shadow: var(--shadow-lg);
+      display: flex; flex-direction: column; gap: 10px;
     }
-
-    .select-group {
-      display: flex;
-      gap: 12px;
-      width: 100%;
+    .target-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      background: #eff6ff; padding: 8px 12px; border-radius: 10px; border: 1px solid #bfdbfe;
     }
-
-    .select-box {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .select-box label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .select-wrapper {
-      position: relative;
-    }
-
+    .target-bar label { font-size: 12px; font-weight: 700; color: #1e40af; white-space: nowrap; }
     select {
-      width: 100%;
-      padding: 10px 14px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--primary-color);
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background-color: #ffffff;
-      outline: none;
-      cursor: pointer;
-      appearance: none;
-      transition: all 0.2s;
+      flex: 1; padding: 8px; font-size: 13px; font-weight: 600;
+      border: 1px solid #cbd5e1; border-radius: 8px; background: white; outline: none;
     }
-
-    .select-wrapper::after {
-      content: "▾";
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 12px;
-      color: #94a3b8;
-      pointer-events: none;
+    .btn-copy {
+      width: 100%; padding: 12px; font-size: 14px; font-weight: 700;
+      color: white; background: #16a34a; border: none; border-radius: 10px;
+      cursor: pointer; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
     }
-
-    select:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
-
-    .btn-nav {
-      width: 100%;
-      padding: 12px;
-      font-size: 15px;
-      font-weight: 700;
-      color: white;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-      transition: all 0.2s;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-nav:hover {
-      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
-      transform: translateY(-1px);
-    }
-
-    .btn-nav:active {
-      transform: translateY(0);
-    }
-
-    /* スマホ対応調整 */
-    @media (max-width: 640px) {
-      .control-panel {
-        bottom: 16px;
-        padding: 14px;
-      }
-      .select-group {
-        flex-direction: column;
-        gap: 8px;
-      }
-    }
+    .btn-copy:hover { background: #15803d; }
   </style>
 </head>
 <body>
 
-<!-- 🔑 パスワード画面 -->
 <div id="pass-screen">
   <div class="login-card">
-    <span class="logo-badge">MEIJO NAVI</span>
-    <h2>名城大学附属高等学校<br>校内ナビゲーション</h2>
-    <p>パスワードを入力して開始してください</p>
-    <input type="password" id="passInput" placeholder="パスワード">
+    <h2>校内ナビ（全77箇所 調整）</h2>
+    <input type="password" id="passInput" placeholder="パスワードを入力">
     <button onclick="checkPassword()">ログイン</button>
-    <div id="errorMsg" class="error-msg">パスワードが正しくありません</div>
   </div>
 </div>
 
-<!-- 🗺️ ナビ画面 -->
 <div id="app-screen">
   <div id="map"></div>
   <div class="control-panel">
-    <div class="select-group">
-      <div class="select-box">
-        <label for="startSelect">出発地</label>
-        <div class="select-wrapper">
-          <select id="startSelect"></select>
-        </div>
-      </div>
-      <div class="select-box">
-        <label for="endSelect">目的地</label>
-        <div class="select-wrapper">
-          <select id="endSelect"></select>
-        </div>
-      </div>
+    <div class="target-bar">
+      <label for="targetSelect">🎯 対象を選択:</label>
+      <select id="targetSelect" onchange="updateTarget()"></select>
     </div>
-    <button class="btn-nav" onclick="showRoute()">
-      <span>ルート案内を表示</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-    </button>
+    <div style="font-size: 11px; color: #64748b; text-align: center;">
+      ※プルダウンで場所を選び、マップ上のその場所をクリックするとピンが移動します。
+    </div>
+    <button class="btn-copy" onclick="outputCoords()">📋 全座標データをコピーして送信</button>
   </div>
 </div>
 
 <script>
   const CORRECT_PASSWORD = "meijo2026";
-
   let map = null;
-  let activeLine = null;
+  let currentTargetKey = "1g_2f_2a1";
+
+  // 📋 図面上の全77箇所リスト
+  const spots = {
+    // 【1号館 2F】
+    "1g_2f_2a1": { name: "1号館 2F 2A1", pos: [-425, 228] },
+    "1g_2f_3a1": { name: "1号館 2F 3A1", pos: [-422, 272] },
+    "1g_2f_3a12": { name: "1号館 2F 3A12", pos: [-420, 310] },
+    "1g_2f_3a13": { name: "1号館 2F 3A13", pos: [-420, 340] },
+    "1g_2f_3a14": { name: "1号館 2F 3A14", pos: [-420, 370] },
+    "1g_2f_3a7": { name: "1号館 2F 3A7", pos: [-460, 228] },
+    "1g_2f_3a8": { name: "1号館 2F 3A8", pos: [-490, 228] },
+    "1g_2f_3a9": { name: "1号館 2F 3A9", pos: [-520, 228] },
+    "1g_2f_3a10": { name: "1号館 2F 3A10", pos: [-550, 228] },
+    "1g_2f_生徒指導室": { name: "1号館 2F 生徒指導室", pos: [-550, 250] },
+
+    // 【1号館 3F】
+    "1g_3f_3a2": { name: "1号館 3F 3A2", pos: [-290, 228] },
+    "1g_3f_3a3": { name: "1号館 3F 3A3", pos: [-330, 228] },
+    "1g_3f_3a4": { name: "1号館 3F 3A4", pos: [-370, 228] },
+    "1g_3f_3a5": { name: "1号館 3F 3A5", pos: [-410, 228] },
+    "1g_3f_3a6": { name: "1号館 3F 3A6", pos: [-450, 228] },
+    "1g_3f_2s4": { name: "1号館 3F 2S4", pos: [-290, 272] },
+    "1g_3f_2s2": { name: "1号館 3F 2S2", pos: [-370, 272] },
+    "1g_3f_2s1": { name: "1号館 3F 2S1", pos: [-410, 272] },
+    "1g_3f_2s3": { name: "1号館 3F 2S3", pos: [-290, 310] },
+    "1g_3f_生物室": { name: "1号館 3F 生物室", pos: [-290, 350] },
+    "1g_3f_化学室": { name: "1号館 3F 化学室", pos: [-370, 350] },
+    "1g_3f_物理室": { name: "1号館 3F 物理室", pos: [-330, 480] },
+    "1g_3f_alルーム": { name: "1号館 3F ALルーム", pos: [-330, 560] },
+
+    // 【1号館 4F】
+    "1g_4f_2a2": { name: "1号館 4F 2A2", pos: [-143, 229] },
+    "1g_4f_2a3": { name: "1号館 4F 2A3", pos: [-183, 229] },
+    "1g_4f_2a4": { name: "1号館 4F 2A4", pos: [-223, 229] },
+    "1g_4f_2a5": { name: "1号館 4F 2A5", pos: [-263, 229] },
+    "1g_4f_2a6": { name: "1号館 4F 2A6", pos: [-303, 229] },
+    "1g_4f_2a7": { name: "1号館 4F 2A7", pos: [-143, 272] },
+    "1g_4f_2a8": { name: "1号館 4F 2A8", pos: [-263, 272] },
+    "1g_4f_2a9": { name: "1号館 4F 2A9", pos: [-303, 272] },
+    "1g_4f_生徒会顧問室": { name: "1号館 4F 生徒会顧問室", pos: [-200, 272] },
+
+    // 【1号館 6F】
+    "1g_6f_1_1": { name: "1号館 6F 1-1", pos: [-425, 142] },
+    "1g_6f_1_2": { name: "1号館 6F 1-2", pos: [-465, 142] },
+    "1g_6f_1_3": { name: "1号館 6F 1-3", pos: [-505, 142] },
+    "1g_6f_1_4": { name: "1号館 6F 1-4", pos: [-545, 142] },
+    "1g_6f_1_9": { name: "1号館 6F 1-9", pos: [-425, 185] },
+    "1g_6f_1_8": { name: "1号館 6F 1-8", pos: [-465, 185] },
+    "1g_6f_1_7": { name: "1号館 6F 1-7", pos: [-505, 185] },
+    "1g_6f_1_6": { name: "1号館 6F 1-6", pos: [-545, 185] },
+    "1g_6f_選択A": { name: "1号館 6F 選択A", pos: [-585, 142] },
+
+    // 【1号館 7F / 8F】
+    "1g_7f_職員室": { name: "1号館 7F 職員室", pos: [-330, 160] },
+    "1g_7f_2a14": { name: "1号館 7F 2A14", pos: [-500, 100] },
+    "1g_7f_2a13": { name: "1号館 7F 2A13", pos: [-540, 100] },
+    "1g_8f_ict2": { name: "1号館 8F ICTルーム2", pos: [-143, 110] },
+    "1g_8f_ssh": { name: "1号館 8F SSH", pos: [-220, 110] },
+    "1g_8f_情報処理室": { name: "1号館 8F 情報処理室", pos: [-280, 110] },
+    "1g_8f_大会議室": { name: "1号館 8F 大会議室", pos: [-220, 160] },
+    "1g_8f_放送室": { name: "1号館 8F 放送室", pos: [-280, 160] },
+
+    // 【2号館】
+    "2g_4f_購買": { name: "2号館 4F 購買", pos: [-210, 500] },
+    "2g_4f_音楽室": { name: "2号館 4F 音楽室", pos: [-250, 560] },
+    "2g_2f_更衣室A": { name: "2号館 2F 更衣室A", pos: [-520, 460] },
+    "2g_2f_更衣室B": { name: "2号館 2F 更衣室B", pos: [-520, 500] },
+
+    // 【3号館】
+    "3g_1f_計測実験室": { name: "3号館 1F 計測実験室", pos: [-100, 690] },
+    "3g_1f_材料実験室": { name: "3号館 1F 材料実験室", pos: [-150, 690] },
+    "3g_1f_溶接実習室": { name: "3号館 1F 溶接実習室", pos: [-220, 690] },
+    "3g_2f_avl": { name: "3号館 2F 視聴覚室(AVL)", pos: [-143, 750] },
+    "3g_2f_学習ルーム": { name: "3号館 2F 学習ルーム", pos: [-220, 750] },
+    "3g_3f_製図室": { name: "3号館 3F 製図室", pos: [-100, 840] },
+    "3g_4f_特別教室": { name: "3号館 4F 特別教室", pos: [-100, 920] },
+    "3g_4f_作法室": { name: "3号館 4F 作法室", pos: [-220, 920] },
+
+    // 【4号館】
+    "4g_1f_機械システム系": { name: "4号館 1F 機械システム系", pos: [-330, 690] },
+    "4g_1f_原動機実習室": { name: "4号館 1F 原動機実習室", pos: [-420, 690] },
+    "4g_1f_cam実習室": { name: "4号館 1F CAM実習室", pos: [-500, 690] },
+    "4g_2f_印刷室": { name: "4号館 2F 印刷室", pos: [-330, 750] },
+    "4g_2f_機械システム管理室": { name: "4号館 2F 機械システム管理室", pos: [-420, 750] },
+    "4g_3f_cad1": { name: "4号館 3F CAD室1", pos: [-420, 840] },
+    "4g_3f_cad2": { name: "4号館 3F CAD室2", pos: [-480, 840] },
+    "4g_4f_パソコン3": { name: "4号館 4F パソコン教室3", pos: [-420, 920] },
+    "4g_4f_パソコン4": { name: "4号館 4F パソコン教室4", pos: [-480, 920] },
+    "4g_4f_商業管理室": { name: "4号館 4F 商業管理室", pos: [-540, 920] }
+  };
+
+  const markers = {};
 
   function checkPassword() {
-    const input = document.getElementById('passInput').value;
-    if (input === CORRECT_PASSWORD) {
-      document.getElementById('pass-screen').style.opacity = '0';
-      document.getElementById('pass-screen').style.transition = 'opacity 0.3s ease';
-      setTimeout(() => {
-        document.getElementById('pass-screen').style.display = 'none';
-        document.getElementById('app-screen').style.display = 'block';
-        initMap();
-      }, 300);
-    } else {
-      document.getElementById('errorMsg').style.display = 'block';
+    if (document.getElementById('passInput').value === CORRECT_PASSWORD) {
+      document.getElementById('pass-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      initMap();
     }
   }
 
-  document.getElementById('passInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') checkPassword();
-  });
-
-  const spots = {
-    // === 1号館 2F ===
-    "2f_2a1":      { name: "1号館 2F 2A1教室",      pos: [-425, 228] },
-    "2f_3a1":      { name: "1号館 2F 3A1教室",      pos: [-422, 272] },
-    "2f_3a12":     { name: "1号館 2F 3A12教室",     pos: [-422, 312] },
-    "2f_3a13":     { name: "1号館 2F 3A13教室",     pos: [-422, 342] },
-    "2f_3a14":     { name: "1号館 2F 3A14教室",     pos: [-422, 372] },
-    "2f_3a7":      { name: "1号館 2F 3A7教室",      pos: [-465, 228] },
-
-    // === 1号館 3F ===
-    "3f_3a2":      { name: "1号館 3F 3A2教室",      pos: [-290, 228] },
-    "3f_3a3":      { name: "1号館 3F 3A3教室",      pos: [-330, 228] },
-    "3f_3a4":      { name: "1号館 3F 3A4教室",      pos: [-370, 228] },
-    "3f_3a5":      { name: "1号館 3F 3A5教室",      pos: [-410, 228] },
-    "3f_3a6":      { name: "1号館 3F 3A6教室",      pos: [-450, 228] },
-    "3f_2s4":      { name: "1号館 3F 2S4教室",      pos: [-290, 272] },
-
-    // === 1号館 4F ===
-    "4f_2a2":      { name: "1号館 4F 2A2教室",      pos: [-143, 229] },
-    "4f_2a3":      { name: "1号館 4F 2A3教室",      pos: [-183, 229] },
-    "4f_2a4":      { name: "1号館 4F 2A4教室",      pos: [-223, 229] },
-    "4f_2a5":      { name: "1号館 4F 2A5教室",      pos: [-263, 229] },
-    "4f_2a6":      { name: "1号館 4F 2A6教室",      pos: [-303, 229] },
-    "4f_2a7":      { name: "1号馆 4F 2A7教室",      pos: [-143, 272] },
-    "4f_2a8":      { name: "1号館 4F 2A8教室",      pos: [-263, 272] },
-    "4f_2a9":      { name: "1号館 4F 2A9教室",      pos: [-303, 272] },
-
-    // === 1号館 6F ===
-    "6f_1_1":      { name: "1号館 6F 1-1教室",      pos: [-425, 142] },
-    "6f_1_2":      { name: "1号館 6F 1-2教室",      pos: [-465, 142] },
-    "6f_1_8":      { name: "1号館 6F 1-8教室",      pos: [-465, 185] },
-
-    // === 1号館 7F ===
-    "7f_staff":    { name: "1号館 7F 職員室",       pos: [-330, 160] },
-
-    // === 1号館 8F ===
-    "8f_ict2":     { name: "1号館 8F ICTルーム2",   pos: [-143, 110] },
-
-    // === 2号館 4F ===
-    "2g_4f_store":  { name: "2号館 4F 購買",        pos: [-210, 500] },
-
-    // === 3号館 ===
-    "3g_2f_avl":    { name: "3号館 2F 視聴覚室(AVL)",pos: [-143, 675] },
-
-    // === 4号館 ===
-    "4g_1f_library":{ name: "4号館 1F 図書館",      pos: [-600, 480] }
-  };
-
   function initMap() {
     if (map) return;
-
     const bounds = [[-700, 0], [0, 1000]];
 
     map = L.map('map', {
@@ -396,55 +208,43 @@ HTML
       minZoom: -1.5,
       maxZoom: 2,
       maxBounds: bounds,
-      zoomControl: false // ズームボタンを非表示にしてスッキリ化
+      zoomControl: false
     });
 
     L.imageOverlay('R8教室配置図-1.png', bounds).addTo(map);
     map.fitBounds(bounds);
 
-    const startSelect = document.getElementById('startSelect');
-    const endSelect = document.getElementById('endSelect');
+    const targetSelect = document.getElementById('targetSelect');
 
     Object.keys(spots).forEach(key => {
       const spot = spots[key];
+      targetSelect.appendChild(new Option(spot.name, key));
 
-      const optStart = document.createElement('option');
-      optStart.value = key; optStart.textContent = spot.name;
-      startSelect.appendChild(optStart);
-
-      const optEnd = document.createElement('option');
-      optEnd.value = key; optEnd.textContent = spot.name;
-      endSelect.appendChild(optEnd);
-
-      L.marker(spot.pos).addTo(map).bindPopup(`<b>${spot.name}</b>`);
+      const marker = L.marker(spot.pos, { interactive: false }).addTo(map);
+      marker.bindTooltip(spot.name, { permanent: true, direction: 'top' });
+      markers[key] = marker;
     });
 
-    startSelect.value = "4f_2a2";
-    endSelect.value = "2f_3a1";
+    map.on('click', function(e) {
+      const lat = Math.round(e.latlng.lat);
+      const lng = Math.round(e.latlng.lng);
+      
+      spots[currentTargetKey].pos = [lat, lng];
+      markers[currentTargetKey].setLatLng([lat, lng]);
+    });
   }
 
-  function showRoute() {
-    const startKey = document.getElementById('startSelect').value;
-    const endKey = document.getElementById('endSelect').value;
+  function updateTarget() {
+    currentTargetKey = document.getElementById('targetSelect').value;
+  }
 
-    if (startKey === endKey) {
-      alert("出発地と目的地が異なる場所を選択してください");
-      return;
-    }
-
-    if (activeLine) map.removeLayer(activeLine);
-
-    const startPos = spots[startKey].pos;
-    const endPos = spots[endKey].pos;
-
-    activeLine = L.polyline([startPos, endPos], {
-      color: '#2563eb',
-      weight: 5,
-      dashArray: '10, 10',
-      opacity: 0.9
-    }).addTo(map);
-
-    map.fitBounds(activeLine.getBounds(), { padding: [80, 80] });
+  function outputCoords() {
+    const jsonStr = JSON.stringify(spots, null, 2);
+    navigator.clipboard.writeText(jsonStr).then(() => {
+      alert("全箇所の座標データをコピーしました！");
+    }).catch(() => {
+      alert("コピーに失敗しました。");
+    });
   }
 </script>
 
